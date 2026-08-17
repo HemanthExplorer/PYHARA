@@ -1,23 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getProductById, getRelatedProducts } from '../services/productService';
+import { getProductById, getProducts, getRelatedProducts } from '../services/productService';
 import { useCart } from '../context/CartContext';
 import ProductCard from '../components/ProductCard';
 
 export default function ProductDetails() {
   const { id } = useParams();
   const { addToCart } = useCart();
+  const [product, setProduct] = useState(null);
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
-  const product = getProductById(id);
+  const fetchProductDetail = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const [singleProd, list] = await Promise.all([
+        getProductById(id),
+        getProducts().catch(() => []),
+      ]);
+      setProduct(singleProd);
+      setAllProducts(list);
+    } catch (err) {
+      console.error(`Error loading product detail for ID ${id}:`, err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
-  // Unknown Product Fallback
+  useEffect(() => {
+    fetchProductDetail();
+    setQuantity(1);
+  }, [fetchProductDetail]);
+
+  // 1. Loading State
+  if (loading) {
+    return (
+      <div className="section container" style={{ textAlign: 'center', padding: '6rem 1.5rem' }}>
+        <h1 className="section-title">Loading product details...</h1>
+        <p className="section-description">Retrieving item specifications from PYHARA server.</p>
+      </div>
+    );
+  }
+
+  // 2. Network / Server API Error State
+  if (error) {
+    return (
+      <div className="section container" style={{ textAlign: 'center', padding: '6rem 1.5rem' }}>
+        <h1 className="section-title" style={{ color: 'var(--color-clay)' }}>
+          Unable to load product details. Please try again.
+        </h1>
+        <p className="section-description" style={{ marginBottom: '2rem' }}>
+          We could not reach the backend server to fetch product information.
+        </p>
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          <button className="btn btn-primary" onClick={fetchProductDetail}>
+            Retry
+          </button>
+          <Link to="/shop" className="btn btn-secondary">
+            Return to Shop
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Product Not Found (404 / null) State
   if (!product) {
     return (
       <div className="section container" style={{ textAlign: 'center', padding: '6rem 1.5rem' }}>
         <h1 className="section-title">Product Not Found</h1>
         <p className="section-description" style={{ marginBottom: '2rem' }}>
-          The product item you are looking for does not exist or may have been moved.
+          The product item you are looking for does not exist or may have been removed.
         </p>
         <Link to="/shop" className="btn btn-primary">
           Return to Shop
@@ -26,7 +83,7 @@ export default function ProductDetails() {
     );
   }
 
-  const relatedProducts = getRelatedProducts(product.id, product.category, 3);
+  const relatedProducts = getRelatedProducts(allProducts, product.id, product.category, 3);
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
@@ -63,7 +120,7 @@ export default function ProductDetails() {
             <div className="details-image-frame">
               <img
                 src={product.image}
-                alt={product.altText || product.name}
+                alt={product.altText || product.alt_text || product.name}
                 className="details-main-img"
               />
               <span className="demo-tag">Demo Placeholder</span>

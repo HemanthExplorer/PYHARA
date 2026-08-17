@@ -1,9 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ProductCard from './ProductCard';
+import { getProducts } from '../services/productService';
 import { DEMO_PRODUCTS } from '../data/products';
 
 export default function CollectionPreview() {
+  const [products, setProducts] = useState(DEMO_PRODUCTS);
+
+  useEffect(() => {
+    let isMounted = true;
+    getProducts()
+      .then((data) => {
+        if (isMounted && data && data.length > 0) {
+          setProducts(data);
+        }
+      })
+      .catch(() => {
+        // Fallback to local DEMO_PRODUCTS seamlessly if API is offline
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <section className="section" id="shop" style={{ backgroundColor: 'var(--bg-surface)' }}>
       <div className="container">
@@ -16,7 +36,7 @@ export default function CollectionPreview() {
         </div>
 
         <div className="products-grid">
-          {DEMO_PRODUCTS.map((product) => (
+          {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
