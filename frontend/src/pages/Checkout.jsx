@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { createOrder } from '../services/orderService';
+import { loadRazorpayScript, createPaymentOrder, verifyPayment } from '../services/paymentService';
 import { formatCurrency, formatTotalCurrency } from '../utils/formatCurrency';
 
 export default function Checkout() {
@@ -16,7 +17,13 @@ export default function Checkout() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+
+  // Pre-load Razorpay script safely in background on component mount
+  useEffect(() => {
+    loadRazorpayScript();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -35,9 +42,10 @@ export default function Checkout() {
     }
   });
 
-  const handleSubmitOrder = async (e) => {
+  const handleCheckoutAndPay = async (e) => {
     e.preventDefault();
     setErrorMessage(null);
+    setStatusMessage(null);
 
     if (cartItems.length === 0) {
       setErrorMessage('Your cart is currently empty.');
@@ -61,47 +69,139 @@ export default function Checkout() {
       return;
     }
 
-    // Construct API order payload
-    const orderPayload = {
-      customer_name: formData.customer_name.trim(),
-      customer_email: formData.customer_email.trim().toLowerCase(),
-      customer_phone: formData.customer_phone.trim(),
-      shipping_address: formData.shipping_address.trim(),
-      items: cartItems.map((item) => ({
-        product_id: item.product.id,
-        quantity: item.quantity,
-      })),
+    setSubmitting(true);
+    setStatusMessage('Creating order & reserving inventory...');
+
+    let createdOrder = null;
+    try {
+      // 1. Create PYHARA Order & reserve inventory
+      const orderPayload = {
+        customer_name: formData.customer_name.trim(),
+        customer_email: formData.customer_email.trim().toLowerCase(),
+        customer_phone: formData.customer_phone.trim(),
+        shipping_address: formData.shipping_address.trim(),
+        items: cartItems.map((item) => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+        })),
+      };
+
+      createdOrder = await createOrder(orderPayload);
+    } catch (err) {
+      console.error('Order creation failed:', err);
+      let userFriendlyMsg = 'Unable to create order. Please try again.';
+      if (err.status === 409) {
+        userFriendlyMsg = err.message || 'Some items are no longer available in the requested quantity.';
+      } else if (err.status === 422) {
+        userFriendlyMsg = err.message || 'Please check your input details.';
+      }
+      setErrorMessage(userFriendlyMsg);
+      setSubmitting(false);
+      setStatusMessage(null);
+      return;
+    }
+
+    // 2. If null price, complete order creation without Razorpay payment modal
+    if (hasNullPrice || createdOrder.total_amount === null || createdOrder.total_amount === undefined) {
+      clearCart();
+      showToast(`Order #${createdOrder.order_number} created! Total will be confirmed.`);
+      navigate(`/order/${createdOrder.id}`);
+      return;
+    }
+
+    // 3. Load Razorpay SDK Script safely
+    setStatusMessage('Loading payment gateway...');
+    const isScriptLoaded = await loadRazorpayScript();
+    if (!isScriptLoaded) {
+      setErrorMessage('Unable to load payment gateway SDK. Please try again or check network connection.');
+      showToast('Payment gateway script failed to load.');
+      setSubmitting(false);
+      setStatusMessage(null);
+      return;
+    }
+
+    // 4. Create Razorpay Payment Order via Backend
+    setStatusMessage('Initializing Razorpay Checkout...');
+    let rzpData = null;
+    try {
+      rzpData = await createPaymentOrder(createdOrder.id);
+    } catch (err) {
+      console.error('Razorpay order creation failed:', err);
+      setErrorMessage(err.message || 'Failed to initialize payment transaction.');
+      setSubmitting(false);
+      setStatusMessage(null);
+      return;
+    }
+
+    // 5. Open Razorpay Test Mode Checkout Modal
+    const options = {
+      key: rzpData.key_id,
+      amount: rzpData.amount,
+      currency: rzpData.currency || 'INR',
+      name: 'PYHARA',
+      description: 'PYHARA Artisan Crafts Payment',
+      order_id: rzpData.razorpay_order_id,
+      prefill: {
+        name: formData.customer_name.trim(),
+        email: formData.customer_email.trim(),
+        contact: formData.customer_phone.trim(),
+      },
+      theme: {
+        color: '#b85a3c',
+      },
+      handler: async function (response) {
+        setStatusMessage('Verifying payment signature...');
+        try {
+          // Send signature details to backend for HMAC verification
+          const verifyResult = await verifyPayment(
+            createdOrder.id,
+            response.razorpay_order_id,
+            response.razorpay_payment_id,
+            response.razorpay_signature
+          );
+
+          if (verifyResult && verifyResult.payment_status === 'Paid') {
+            clearCart();
+            showToast(`Payment successful! Order #${createdOrder.order_number} confirmed.`);
+            navigate(`/order/${createdOrder.id}`);
+          } else {
+            setErrorMessage('Payment verification failed. Please contact support.');
+            setSubmitting(false);
+            setStatusMessage(null);
+          }
+        } catch (verErr) {
+          console.error('Payment verification failed:', verErr);
+          setErrorMessage(verErr.message || 'Payment verification failed.');
+          setSubmitting(false);
+          setStatusMessage(null);
+        }
+      },
+      modal: {
+        ondismiss: function () {
+          setSubmitting(false);
+          setStatusMessage(null);
+          showToast('Payment was not completed.');
+          // Redirect to order page so customer can retry payment
+          clearCart();
+          navigate(`/order/${createdOrder.id}`);
+        },
+      },
     };
 
-    setSubmitting(true);
-
     try {
-      // POST /api/orders
-      const createdOrder = await createOrder(orderPayload);
-      
-      // SUCCESS (HTTP 201): Clear cart and navigate to order confirmation page
-      clearCart();
-      showToast(`Order #${createdOrder.order_number} placed successfully!`);
-      navigate(`/order/${createdOrder.id}`);
+      const razorpayInstance = new window.Razorpay(options);
+      razorpayInstance.on('payment.failed', function (resp) {
+        console.error('Razorpay payment failed:', resp.error);
+        setErrorMessage(`Payment failed: ${resp.error?.description || 'Transaction declined'}`);
+        setSubmitting(false);
+        setStatusMessage(null);
+      });
+      razorpayInstance.open();
     } catch (err) {
-      console.error('Checkout failed:', err);
-      let userFriendlyMsg = 'Unable to complete your order. Please try again.';
-
-      if (err.status === 409) {
-        if (err.message && err.message.toLowerCase().includes('coming soon')) {
-          userFriendlyMsg = 'One or more products are currently unavailable for order.';
-        } else {
-          userFriendlyMsg = 'Some items are no longer available in the requested quantity.';
-        }
-      } else if (err.status === 404) {
-        userFriendlyMsg = 'Product or order record not found.';
-      } else if (err.status === 422) {
-        userFriendlyMsg = err.message || 'Please check your information and try again.';
-      }
-
-      setErrorMessage(userFriendlyMsg);
-    } finally {
+      console.error('Failed to open Razorpay modal:', err);
+      setErrorMessage('Could not open payment window. Please check browser pop-up settings.');
       setSubmitting(false);
+      setStatusMessage(null);
     }
   };
 
@@ -119,6 +219,12 @@ export default function Checkout() {
       </div>
     );
   }
+
+  const payButtonText = submitting
+    ? (statusMessage || 'Processing...')
+    : hasNullPrice
+    ? 'Place Order (Total Pending)'
+    : `Pay ${formatTotalCurrency(subtotalAmount)}`;
 
   return (
     <div className="checkout-page section" style={{ paddingTop: '2.5rem' }}>
@@ -141,12 +247,30 @@ export default function Checkout() {
         </nav>
 
         <div className="section-header" style={{ textAlign: 'left', margin: '0 0 2.5rem 0', maxWidth: 'none' }}>
-          <span className="section-tag">Secure Order</span>
-          <h1 className="section-title font-serif">Checkout &amp; Shipping</h1>
+          <span className="section-tag">Razorpay Test Mode</span>
+          <h1 className="section-title font-serif">Checkout &amp; Payment</h1>
           <p className="section-description">
-            Complete your order details below. Stock is reserved immediately upon placement.
+            Complete your shipping details and proceed to secure Razorpay payment.
           </p>
         </div>
+
+        {/* Status Notice */}
+        {statusMessage && (
+          <div
+            style={{
+              backgroundColor: 'rgba(46, 67, 52, 0.1)',
+              border: '1px solid var(--color-earth-green)',
+              color: 'var(--color-earth-green)',
+              padding: '0.9rem 1.25rem',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '1.5rem',
+              fontWeight: '600',
+              textAlign: 'center',
+            }}
+          >
+            {statusMessage}
+          </div>
+        )}
 
         {/* Error Alert Notice */}
         {errorMessage && (
@@ -177,7 +301,7 @@ export default function Checkout() {
 
           {/* Form Column */}
           <div className="checkout-form-col">
-            <form onSubmit={handleSubmitOrder} className="checkout-form">
+            <form onSubmit={handleCheckoutAndPay} className="checkout-form">
               <div
                 className="checkout-card"
                 style={{
@@ -270,12 +394,13 @@ export default function Checkout() {
                   style={{
                     width: '100%',
                     padding: '1.1rem 2rem',
-                    fontSize: '1.05rem',
+                    fontSize: '1.1rem',
+                    fontWeight: '600',
                     opacity: submitting ? 0.7 : 1,
                     cursor: submitting ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  {submitting ? 'Placing Order...' : 'Place Order'}
+                  {payButtonText}
                 </button>
               </div>
             </form>
@@ -415,7 +540,7 @@ export default function Checkout() {
                       fontWeight: '500',
                     }}
                   >
-                    Notice: Some product prices are still being confirmed. Official total will be confirmed prior to final payment.
+                    Notice: Payment unavailable until price is confirmed by PYHARA artisans.
                   </p>
                 </div>
               )}

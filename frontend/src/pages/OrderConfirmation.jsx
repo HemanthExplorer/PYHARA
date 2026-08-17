@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getOrderById } from '../services/orderService';
+import { loadRazorpayScript, createPaymentOrder, verifyPayment } from '../services/paymentService';
 import { formatCurrency, formatTotalCurrency } from '../utils/formatCurrency';
+import { useCart } from '../context/CartContext';
 
 export default function OrderConfirmation() {
   const { id } = useParams();
+  const { showToast } = useCart();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState(null);
 
   const fetchOrderDetails = useCallback(async () => {
     setLoading(true);
@@ -26,6 +31,70 @@ export default function OrderConfirmation() {
   useEffect(() => {
     fetchOrderDetails();
   }, [fetchOrderDetails]);
+
+  const handleRetryPayment = async () => {
+    if (!order || order.total_amount === null) return;
+    setPaying(true);
+    setPayError(null);
+
+    const isLoaded = await loadRazorpayScript();
+    if (!isLoaded) {
+      setPayError('Unable to load payment gateway script.');
+      setPaying(false);
+      return;
+    }
+
+    try {
+      const rzpData = await createPaymentOrder(order.id);
+      const options = {
+        key: rzpData.key_id,
+        amount: rzpData.amount,
+        currency: rzpData.currency || 'INR',
+        name: 'PYHARA',
+        description: `Payment for Order #${order.order_number}`,
+        order_id: rzpData.razorpay_order_id,
+        prefill: {
+          name: order.customer_name,
+          email: order.customer_email,
+          contact: order.customer_phone,
+        },
+        theme: { color: '#b85a3c' },
+        handler: async function (response) {
+          try {
+            const verifyResult = await verifyPayment(
+              order.id,
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature
+            );
+            if (verifyResult && verifyResult.payment_status === 'Paid') {
+              showToast('Payment verified successfully!');
+              await fetchOrderDetails();
+            } else {
+              setPayError('Payment verification failed.');
+            }
+          } catch (verErr) {
+            setPayError(verErr.message || 'Payment verification failed.');
+          } finally {
+            setPaying(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setPaying(false);
+            showToast('Payment was not completed.');
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      console.error('Payment initialization failed:', err);
+      setPayError(err.message || 'Failed to start payment.');
+      setPaying(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -53,6 +122,7 @@ export default function OrderConfirmation() {
   }
 
   const createdDateFormatted = new Date(order.created_at).toLocaleString();
+  const isPaid = order.payment_status === 'Paid';
 
   return (
     <div className="order-confirmation-page section" style={{ paddingTop: '2.5rem' }}>
@@ -73,8 +143,8 @@ export default function OrderConfirmation() {
               width: '56px',
               height: '56px',
               borderRadius: '50%',
-              backgroundColor: 'rgba(46, 67, 52, 0.12)',
-              color: 'var(--color-earth-green)',
+              backgroundColor: isPaid ? 'rgba(46, 67, 52, 0.12)' : 'rgba(184, 90, 60, 0.12)',
+              color: isPaid ? 'var(--color-earth-green)' : 'var(--color-clay)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -82,14 +152,14 @@ export default function OrderConfirmation() {
               margin: '0 auto 1.25rem auto',
             }}
           >
-            &#10003;
+            {isPaid ? '✓' : '!'}
           </div>
 
-          <span className="section-tag" style={{ color: 'var(--color-earth-green)' }}>
-            Order Placed Successfully
+          <span className="section-tag" style={{ color: isPaid ? 'var(--color-earth-green)' : 'var(--color-clay)' }}>
+            {isPaid ? 'Order Confirmed & Paid' : 'Order Received'}
           </span>
           <h1 className="font-serif" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
-            Thank You for Your Order!
+            {isPaid ? 'Thank You for Your Payment!' : 'Order Placed (Payment Pending)'}
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', marginBottom: '1.25rem' }}>
             Your order number is <strong style={{ color: 'var(--text-main)' }}>{order.order_number}</strong>
@@ -104,16 +174,43 @@ export default function OrderConfirmation() {
               padding: '0.6rem 1.25rem',
               borderRadius: 'var(--radius-full)',
               fontSize: '0.875rem',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
             }}
           >
             <span>Date: <strong>{createdDateFormatted}</strong></span>
             <span>
-              Status:{' '}
-              <strong className="status-pill in" style={{ marginLeft: '0.25rem' }}>
+              Payment:{' '}
+              <strong className={`status-pill ${isPaid ? 'in' : 'soon'}`} style={{ marginLeft: '0.25rem' }}>
+                {order.payment_status || 'Pending'}
+              </strong>
+            </span>
+            <span>
+              Fulfillment:{' '}
+              <strong className={`status-pill ${order.status === 'Confirmed' ? 'in' : 'soon'}`} style={{ marginLeft: '0.25rem' }}>
                 {order.status}
               </strong>
             </span>
           </div>
+
+          {/* Retry Payment Button if Pending */}
+          {!isPaid && order.status !== 'Cancelled' && order.total_amount !== null && (
+            <div style={{ marginTop: '1.5rem' }}>
+              {payError && (
+                <div style={{ color: 'var(--color-clay)', fontSize: '0.85rem', marginBottom: '0.75rem', fontWeight: '500' }}>
+                  {payError}
+                </div>
+              )}
+              <button
+                className="btn btn-primary"
+                onClick={handleRetryPayment}
+                disabled={paying}
+                style={{ padding: '0.8rem 2rem' }}
+              >
+                {paying ? 'Opening Payment...' : `Complete Payment (${formatTotalCurrency(order.total_amount)})`}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Order Details Grid */}

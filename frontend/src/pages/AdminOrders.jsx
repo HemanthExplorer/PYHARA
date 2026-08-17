@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAdminOrders, updateOrderStatus } from '../services/orderService';
+import { getPaymentForOrder } from '../services/paymentService';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency, formatTotalCurrency } from '../utils/formatCurrency';
@@ -15,6 +16,8 @@ export default function AdminOrders() {
 
   // Selected Order Modal State
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [paymentDetails, setPaymentDetails] = useState(null);
+  const [loadingPayment, setLoadingPayment] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [statusError, setStatusError] = useState(null);
@@ -42,16 +45,28 @@ export default function AdminOrders() {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && selectedOrder && !updatingStatus) {
         setSelectedOrder(null);
+        setPaymentDetails(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedOrder, updatingStatus]);
 
-  const handleOpenDetail = (ord) => {
+  const handleOpenDetail = async (ord) => {
     setSelectedOrder(ord);
     setNewStatus(ord.status);
     setStatusError(null);
+    setPaymentDetails(null);
+
+    setLoadingPayment(true);
+    try {
+      const pmt = await getPaymentForOrder(ord.id);
+      setPaymentDetails(pmt);
+    } catch (err) {
+      console.warn('No payment record retrieved:', err);
+    } finally {
+      setLoadingPayment(false);
+    }
   };
 
   const handleStatusUpdateSubmit = async (e) => {
@@ -70,6 +85,7 @@ export default function AdminOrders() {
       const updated = await updateOrderStatus(selectedOrder.id, newStatus);
       showToast(`Order #${updated.order_number} status updated to ${updated.status}.`);
       setSelectedOrder(null);
+      setPaymentDetails(null);
       await fetchOrders();
     } catch (err) {
       console.error('Failed to update order status:', err);
@@ -127,9 +143,9 @@ export default function AdminOrders() {
         <div className="admin-header-row">
           <div>
             <span className="section-tag">Internal Management</span>
-            <h1 className="admin-title font-serif">Customer Orders</h1>
+            <h1 className="admin-title font-serif">Customer Orders &amp; Payments</h1>
             <p className="admin-subtitle">
-              View customer purchases, track fulfillment states, or manage order cancellations.
+              View customer purchases, track Razorpay payment status, and manage order fulfillment states.
             </p>
           </div>
 
@@ -177,9 +193,9 @@ export default function AdminOrders() {
                       <th>Order #</th>
                       <th>Customer</th>
                       <th>Date</th>
-                      <th>Items</th>
                       <th>Total Amount</th>
-                      <th>Status</th>
+                      <th>Payment Status</th>
+                      <th>Fulfillment Status</th>
                       <th style={{ textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
@@ -194,6 +210,13 @@ export default function AdminOrders() {
                         : isDelivered
                         ? 'admin-tag-avail'
                         : 'admin-tag-cat';
+
+                      const pmtStatus = ord.payment_status || 'Pending';
+                      const pmtClass = pmtStatus === 'Paid'
+                        ? 'admin-tag-avail'
+                        : pmtStatus === 'Failed'
+                        ? 'admin-tag-out'
+                        : 'admin-tag-soon';
 
                       return (
                         <tr key={ord.id}>
@@ -210,10 +233,10 @@ export default function AdminOrders() {
                           <td style={{ fontSize: '0.85rem' }}>
                             {new Date(ord.created_at).toLocaleDateString()}
                           </td>
-                          <td style={{ fontWeight: '600' }}>
-                            {ord.items ? ord.items.reduce((s, i) => s + i.quantity, 0) : 0} units
-                          </td>
                           <td className="admin-price-cell">{totalLabel}</td>
+                          <td>
+                            <span className={pmtClass}>{pmtStatus}</span>
+                          </td>
                           <td>
                             <span className={statusClass}>{ord.status}</span>
                           </td>
@@ -236,7 +259,7 @@ export default function AdminOrders() {
         )}
       </div>
 
-      {/* Order Detail & Status Modal */}
+      {/* Order Detail & Payment Modal */}
       {selectedOrder && (
         <div className="modal-backdrop" onClick={() => !updatingStatus && setSelectedOrder(null)}>
           <div
@@ -303,6 +326,51 @@ export default function AdminOrders() {
                   )}
                 </div>
               </form>
+
+              {/* Razorpay Payment Information Box */}
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  padding: '1.25rem',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-subtle)',
+                  marginBottom: '1.5rem',
+                }}
+              >
+                <h4 className="font-serif" style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>
+                  Razorpay Payment Information
+                </h4>
+                {loadingPayment ? (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Loading payment transaction details...</p>
+                ) : paymentDetails ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.9rem' }}>
+                    <div>
+                      <span className="spec-label">Payment Status:</span>{' '}
+                      <strong style={{ color: paymentDetails.status === 'Paid' ? 'var(--color-earth-green)' : 'var(--color-clay)' }}>
+                        {paymentDetails.status}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="spec-label">Amount:</span>{' '}
+                      <strong>{formatCurrency(paymentDetails.amount)} ({paymentDetails.currency})</strong>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <span className="spec-label">Razorpay Order ID:</span>{' '}
+                      <code style={{ fontSize: '0.85rem' }}>{paymentDetails.razorpay_order_id}</code>
+                    </div>
+                    {paymentDetails.razorpay_payment_id && (
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <span className="spec-label">Razorpay Payment ID:</span>{' '}
+                        <code style={{ fontSize: '0.85rem' }}>{paymentDetails.razorpay_payment_id}</code>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    Payment Status: <strong>{selectedOrder.payment_status || 'Pending'}</strong> (No active Razorpay payment transaction linked).
+                  </div>
+                )}
+              </div>
 
               {/* Customer Details Box */}
               <div

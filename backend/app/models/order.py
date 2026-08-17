@@ -15,11 +15,13 @@ class Order(Base):
     customer_phone = Column(String, nullable=False)
     shipping_address = Column(Text, nullable=False)
     status = Column(String, default="Pending", nullable=False)
+    payment_status = Column(String, default="Pending", nullable=False)  # Pending, Paid, Failed
     total_amount = Column(Numeric(12, 2), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="order", cascade="all, delete-orphan")
 
 
 class OrderItem(Base):

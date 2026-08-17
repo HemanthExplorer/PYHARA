@@ -9,19 +9,35 @@ if env_path.exists():
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from app.api.products import router as products_router
 from app.api.orders import router as orders_router
 from app.api.auth import router as auth_router
+from app.api.payments import router as payments_router
 from app.db.database import engine, Base, SessionLocal
 
 # Import models so Base metadata is aware of all tables before create_all
 from app.models.product import Product
 from app.models.order import Order, OrderItem
 from app.models.user import User
+from app.models.payment import Payment
 from app.services.auth_service import init_default_admin
 
 # Create missing database tables safely
 Base.metadata.create_all(bind=engine)
+
+# Safely add payment_status column to existing SQLite orders table if missing
+with engine.connect() as conn:
+    try:
+        # Check SQLite pragma table_info for orders
+        result = conn.execute(text("PRAGMA table_info(orders)")).fetchall()
+        column_names = [row[1] for row in result]
+        if "payment_status" not in column_names:
+            conn.execute(text("ALTER TABLE orders ADD COLUMN payment_status VARCHAR DEFAULT 'Pending' NOT NULL"))
+            conn.commit()
+            print("Successfully added payment_status column to orders table.")
+    except Exception as e:
+        print(f"Notice during migration check: {e}")
 
 # Initialize default admin on application startup
 db = SessionLocal()
@@ -33,7 +49,7 @@ finally:
 app = FastAPI(
     title="PYHARA Eco-Marketplace API",
     description="Backend API for PYHARA eco-friendly artisan crafts marketplace.",
-    version="0.3.0",
+    version="0.4.0",
 )
 
 # Enable CORS for Vite local dev server (port 5173 / default localhost)
@@ -48,6 +64,7 @@ app.add_middleware(
 app.include_router(products_router)
 app.include_router(orders_router)
 app.include_router(auth_router)
+app.include_router(payments_router)
 
 
 @app.get("/")

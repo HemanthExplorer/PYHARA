@@ -58,6 +58,7 @@ class OrderResponse(BaseModel):
     customer_phone: str
     shipping_address: str
     status: str
+    payment_status: str = "Pending"
     total_amount: Optional[Decimal] = None
     created_at: datetime
     updated_at: datetime
