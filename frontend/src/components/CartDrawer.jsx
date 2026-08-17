@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function CartDrawer() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export default function CartDrawer() {
 
   const subtotalDisplay = hasNullPrice
     ? 'Subtotal unavailable'
-    : `₹ ${subtotal.toFixed(2)}`;
+    : formatCurrency(subtotal);
 
   const handleProceedToCheckout = () => {
     closeCart();
@@ -73,10 +74,11 @@ export default function CartDrawer() {
           ) : (
             <div className="cart-items-list">
               {cartItems.map((item) => {
-                const itemPriceDisplay =
-                  item.product.price !== null && item.product.price !== undefined
-                    ? `₹ ${item.product.price}`
-                    : 'Price coming soon';
+                const hasPrice = item.product.price !== null && item.product.price !== undefined;
+                const unitPriceLabel = formatCurrency(item.product.price);
+                const lineTotalLabel = hasPrice
+                  ? formatCurrency(item.product.price * item.quantity)
+                  : 'Price coming soon';
 
                 return (
                   <div key={item.product.id} className="cart-item-row">
@@ -89,9 +91,17 @@ export default function CartDrawer() {
                     <div className="cart-item-info">
                       <span className="cart-item-cat">{item.product.category}</span>
                       <h4 className="cart-item-title">{item.product.name}</h4>
-                      <span className="cart-item-price">{itemPriceDisplay}</span>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.25rem' }}>
+                        <span className="cart-item-price" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                          {item.quantity} &times; {unitPriceLabel}
+                        </span>
+                        <span style={{ fontWeight: '700', color: 'var(--color-clay)', fontSize: '0.9rem' }}>
+                          {lineTotalLabel}
+                        </span>
+                      </div>
 
-                      <div className="cart-item-controls">
+                      <div className="cart-item-controls" style={{ marginTop: '0.75rem' }}>
                         <div className="qty-selector-sm">
                           <button
                             className="qty-btn-sm"

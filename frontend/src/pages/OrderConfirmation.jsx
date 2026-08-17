@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getOrderById } from '../services/orderService';
+import { formatCurrency, formatTotalCurrency } from '../utils/formatCurrency';
 
 export default function OrderConfirmation() {
   const { id } = useParams();
@@ -166,8 +167,8 @@ export default function OrderConfirmation() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
             {order.items.map((item) => {
               const hasPrice = item.unit_price !== null && item.unit_price !== undefined;
-              const unitPriceLabel = hasPrice ? `₹ ${item.unit_price}` : 'Price coming soon';
-              const lineTotalLabel = hasPrice ? `₹ ${item.line_total}` : 'Price coming soon';
+              const unitPriceLabel = formatCurrency(item.unit_price);
+              const lineTotalLabel = hasPrice ? formatCurrency(item.line_total) : 'Price coming soon';
 
               return (
                 <div
@@ -202,9 +203,7 @@ export default function OrderConfirmation() {
               Total Amount
             </span>
             <span style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--color-clay)' }}>
-              {order.total_amount !== null && order.total_amount !== undefined
-                ? `₹ ${order.total_amount}`
-                : 'Total will be confirmed'}
+              {formatTotalCurrency(order.total_amount)}
             </span>
           </div>
         </div>

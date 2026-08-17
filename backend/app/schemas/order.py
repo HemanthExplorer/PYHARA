@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -43,8 +44,8 @@ class OrderItemResponse(BaseModel):
     product_id: str
     product_name: str
     quantity: int
-    unit_price: Optional[float] = None
-    line_total: Optional[float] = None
+    unit_price: Optional[Decimal] = None
+    line_total: Optional[Decimal] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -57,7 +58,7 @@ class OrderResponse(BaseModel):
     customer_phone: str
     shipping_address: str
     status: str
-    total_amount: Optional[float] = None
+    total_amount: Optional[Decimal] = None
     created_at: datetime
     updated_at: datetime
     items: List[OrderItemResponse] = []

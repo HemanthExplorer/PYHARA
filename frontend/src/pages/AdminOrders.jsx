@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getAdminOrders, updateOrderStatus } from '../services/orderService';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { formatCurrency, formatTotalCurrency } from '../utils/formatCurrency';
 
 export default function AdminOrders() {
   const navigate = useNavigate();
@@ -184,10 +185,7 @@ export default function AdminOrders() {
                   </thead>
                   <tbody>
                     {orders.map((ord) => {
-                      const totalLabel =
-                        ord.total_amount !== null && ord.total_amount !== undefined
-                          ? `₹ ${ord.total_amount}`
-                          : 'Total will be confirmed';
+                      const totalLabel = formatTotalCurrency(ord.total_amount);
 
                       const isCancelled = ord.status === 'Cancelled';
                       const isDelivered = ord.status === 'Delivered';
@@ -370,11 +368,11 @@ export default function AdminOrders() {
                         <strong>{item.product_name}</strong> (ID: {item.product_id})
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                           Qty: {item.quantity} &times;{' '}
-                          {item.unit_price !== null ? `₹ ${item.unit_price}` : 'Price coming soon'}
+                          {formatCurrency(item.unit_price)}
                         </div>
                       </div>
                       <div style={{ fontWeight: '600', color: 'var(--color-clay)' }}>
-                        {item.line_total !== null ? `₹ ${item.line_total}` : 'Price coming soon'}
+                        {item.unit_price !== null ? formatCurrency(item.line_total) : 'Price coming soon'}
                       </div>
                     </div>
                   ))}
@@ -385,9 +383,7 @@ export default function AdminOrders() {
                     Total Order Amount
                   </span>
                   <span style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--color-clay)' }}>
-                    {selectedOrder.total_amount !== null && selectedOrder.total_amount !== undefined
-                      ? `₹ ${selectedOrder.total_amount}`
-                      : 'Total will be confirmed'}
+                    {formatTotalCurrency(selectedOrder.total_amount)}
                   </span>
                 </div>
               </div>

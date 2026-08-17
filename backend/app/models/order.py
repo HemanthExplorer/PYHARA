@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Float, Text, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, String, Numeric, Text, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.db.database import Base
 
@@ -15,7 +15,7 @@ class Order(Base):
     customer_phone = Column(String, nullable=False)
     shipping_address = Column(Text, nullable=False)
     status = Column(String, default="Pending", nullable=False)
-    total_amount = Column(Float, nullable=True)
+    total_amount = Column(Numeric(12, 2), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -30,7 +30,7 @@ class OrderItem(Base):
     product_id = Column(String, nullable=False, index=True)
     product_name = Column(String, nullable=False)
     quantity = Column(Integer, nullable=False)
-    unit_price = Column(Float, nullable=True)
-    line_total = Column(Float, nullable=True)
+    unit_price = Column(Numeric(10, 2), nullable=True)
+    line_total = Column(Numeric(12, 2), nullable=True)
 
     order = relationship("Order", back_populates="items")

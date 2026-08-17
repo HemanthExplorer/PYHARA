@@ -1,12 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function ProductCard({ product }) {
   if (!product) return null;
 
-  const displayPrice = product.price !== null && product.price !== undefined
-    ? `₹ ${product.price}`
-    : 'Price coming soon';
+  const displayPrice = formatCurrency(product.price);
 
   const isComingSoon = product.availability === 'Coming Soon';
   const isOutOfStock = !isComingSoon && (product.stock_quantity === 0 || product.availability === 'Out of Stock');

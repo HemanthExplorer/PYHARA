@@ -8,6 +8,7 @@ import {
 } from '../services/adminProductService';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function AdminProducts() {
   const navigate = useNavigate();
@@ -313,10 +314,7 @@ export default function AdminProducts() {
                   </thead>
                   <tbody>
                     {products.map((prod) => {
-                      const priceLabel =
-                        prod.price !== null && prod.price !== undefined
-                          ? `₹ ${prod.price}`
-                          : 'Price coming soon';
+                      const priceLabel = formatCurrency(prod.price);
                       
                       const isComingSoon = prod.availability === 'Coming Soon';
                       const isInStock = !isComingSoon && prod.stock_quantity > 0;

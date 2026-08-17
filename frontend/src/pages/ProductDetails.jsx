@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getProductById, getProducts, getRelatedProducts } from '../services/productService';
 import { useCart } from '../context/CartContext';
 import ProductCard from '../components/ProductCard';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -94,9 +95,7 @@ export default function ProductDetails() {
     addToCart(product, quantity);
   };
 
-  const displayPrice = product.price !== null && product.price !== undefined
-    ? `₹ ${product.price}`
-    : 'Price coming soon';
+  const displayPrice = formatCurrency(product.price);
 
   const statusLabel = isComingSoon
     ? 'Coming Soon'

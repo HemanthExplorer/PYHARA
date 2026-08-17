@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from datetime import datetime
 from typing import List, Optional
 from fastapi import HTTPException, status
@@ -47,7 +48,7 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
         )
         db.add(order)
 
-        total_sum = 0.0
+        total_sum = Decimal("0.00")
         has_null_price = False
 
         for item_in in order_in.items:
@@ -75,10 +76,10 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
             if product.stock_quantity == 0 and product.availability != "Coming Soon":
                 product.availability = "Out of Stock"
 
-            # Compute item price & totals
-            unit_price = product.price
+            # Compute item price & totals using exact Decimal arithmetic
+            unit_price = Decimal(str(product.price)) if product.price is not None else None
             if unit_price is not None:
-                line_total = round(unit_price * item_in.quantity, 2)
+                line_total = unit_price * Decimal(item_in.quantity)
                 total_sum += line_total
             else:
                 line_total = None
@@ -95,7 +96,7 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
             )
             db.add(order_item)
 
-        order.total_amount = None if has_null_price else round(total_sum, 2)
+        order.total_amount = None if has_null_price else total_sum
 
         db.commit()
         db.refresh(order)

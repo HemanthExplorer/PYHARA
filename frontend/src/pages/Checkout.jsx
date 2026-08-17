@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { createOrder } from '../services/orderService';
+import { formatCurrency, formatTotalCurrency } from '../utils/formatCurrency';
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -303,9 +304,9 @@ export default function Checkout() {
               >
                 {cartItems.map((item) => {
                   const hasPrice = item.product.price !== null && item.product.price !== undefined;
-                  const priceLabel = hasPrice ? `₹ ${item.product.price}` : 'Price coming soon';
+                  const unitPriceLabel = formatCurrency(item.product.price);
                   const lineTotalLabel = hasPrice
-                    ? `₹ ${(item.product.price * item.quantity).toFixed(2)}`
+                    ? formatCurrency(item.product.price * item.quantity)
                     : 'Price coming soon';
 
                   return (
@@ -344,7 +345,7 @@ export default function Checkout() {
                           {item.product.name}
                         </h4>
                         <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}>
-                          Qty: {item.quantity} &times; {priceLabel}
+                          Qty: {item.quantity} &times; {unitPriceLabel}
                         </div>
                       </div>
                       <div
@@ -360,6 +361,16 @@ export default function Checkout() {
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Subtotal & Total Rows */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Subtotal</span>
+                  <span style={{ fontWeight: '600' }}>
+                    {hasNullPrice ? 'Subtotal unavailable' : formatCurrency(subtotalAmount)}
+                  </span>
+                </div>
               </div>
 
               {/* Total Calculation Row */}
@@ -382,21 +393,31 @@ export default function Checkout() {
                     color: 'var(--color-clay)',
                   }}
                 >
-                  {hasNullPrice ? 'Total will be confirmed' : `₹ ${subtotalAmount.toFixed(2)}`}
+                  {hasNullPrice ? 'Total will be confirmed' : formatTotalCurrency(subtotalAmount)}
                 </span>
               </div>
 
               {hasNullPrice && (
-                <p
+                <div
                   style={{
-                    fontSize: '0.8rem',
-                    color: 'var(--text-muted)',
-                    marginTop: '0.75rem',
-                    fontStyle: 'italic',
+                    backgroundColor: 'rgba(184, 90, 60, 0.08)',
+                    border: '1px solid rgba(184, 90, 60, 0.3)',
+                    padding: '0.75rem 1rem',
+                    borderRadius: 'var(--radius-sm)',
+                    marginTop: '1rem',
                   }}
                 >
-                  Notice: Official product pricing will be confirmed by PYHARA artisans prior to order processing.
-                </p>
+                  <p
+                    style={{
+                      fontSize: '0.825rem',
+                      color: 'var(--color-clay)',
+                      margin: 0,
+                      fontWeight: '500',
+                    }}
+                  >
+                    Notice: Some product prices are still being confirmed. Official total will be confirmed prior to final payment.
+                  </p>
+                </div>
               )}
             </div>
           </div>

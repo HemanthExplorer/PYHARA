@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function ProductDetailModal() {
   const { selectedProductDetail, closeProductDetail, addToCart } = useCart();
@@ -49,7 +50,7 @@ export default function ProductDetailModal() {
 
             <div className="detail-meta">
               <span className="detail-price">
-                {product.price ? `₹ ${product.price}` : 'Price coming soon'}
+                {formatCurrency(product.price)}
               </span>
               <span className="detail-availability-badge">
                 {product.availability || 'Coming Soon'}
