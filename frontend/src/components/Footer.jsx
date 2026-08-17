@@ -1,57 +1,57 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
     <footer className="footer">
       <div className="container">
         <div className="footer-grid">
-          {/* Brand Info */}
+          {/* Column 1: Brand Info */}
           <div className="footer-brand">
-            <span className="logo-title font-serif" style={{ fontSize: '1.75rem', fontWeight: '700', letterSpacing: '0.1em' }}>
-              PYHARA
-            </span>
+            <Link to="/" className="logo-brand">
+              <span className="logo-title">PYHARA</span>
+              <span className="logo-tagline">Honor Tradition. Protect Nature.</span>
+            </Link>
             <p className="footer-tagline">
-              Honor Tradition. Protect Nature.
-            </p>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginTop: '0.75rem', maxWidth: '300px' }}>
-              Curated marketplace for culturally rooted and environmentally responsible products.
+              Bringing meaningful Indian heritage craft, natural products, and conscious choices into modern life.
             </p>
           </div>
 
-          {/* Navigation Links */}
+          {/* Column 2: Navigation */}
           <div>
-            <h3 className="footer-heading">Navigation</h3>
+            <h4 className="footer-heading">Navigation</h4>
             <ul className="footer-links">
-              <li><a href="#collection">Shop</a></li>
-              <li><a href="#values">Our Story</a></li>
-              <li><a href="#artisans">Craft &amp; Makers</a></li>
-              <li><a href="#sustainability">Sustainability</a></li>
+              <li><Link to="/shop">Shop Collection</Link></li>
+              <li><a href="#story">Our Philosophy</a></li>
+              <li><a href="#artisans">Artisans &amp; Makers</a></li>
+              <li><a href="#sustainability">Impact Commitments</a></li>
             </ul>
           </div>
 
-          {/* Connect */}
+          {/* Column 3: Collections */}
           <div>
-            <h3 className="footer-heading">Connect</h3>
+            <h4 className="footer-heading">Collections</h4>
             <ul className="footer-links">
-              <li><span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Instagram (Placeholder)</span></li>
-              <li><span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Facebook (Placeholder)</span></li>
+              <li><Link to="/shop">Ganesh Idols</Link></li>
+              <li><span style={{ opacity: 0.6, cursor: 'default' }}>Traditional Clothing (Soon)</span></li>
+              <li><span style={{ opacity: 0.6, cursor: 'default' }}>Plants &amp; Green Living (Soon)</span></li>
+              <li><span style={{ opacity: 0.6, cursor: 'default' }}>Home &amp; Craft (Soon)</span></li>
             </ul>
           </div>
 
-          {/* Legal */}
+          {/* Column 4: Internal / Platform */}
           <div>
-            <h3 className="footer-heading">Legal</h3>
+            <h4 className="footer-heading">Platform</h4>
             <ul className="footer-links">
-              <li><span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Privacy Policy</span></li>
-              <li><span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>Terms of Service</span></li>
+              <li><Link to="/admin/products">Admin Management</Link></li>
+              <li><a href="#story">About PYHARA</a></li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom copyright */}
         <div className="footer-bottom">
           <p>&copy; {new Date().getFullYear()} PYHARA. All rights reserved.</p>
-          <p>Built with respect for culture, craft, and nature.</p>
+          <p className="footer-credit">Built with care for nature &amp; tradition.</p>
         </div>
       </div>
     </footer>

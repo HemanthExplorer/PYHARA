@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import ProductDetails from './pages/ProductDetails';
+import AdminProducts from './pages/AdminProducts';
 import SearchModal from './components/SearchModal';
 import ProductDetailModal from './components/ProductDetailModal';
 import CartDrawer from './components/CartDrawer';
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="/admin/products" element={<AdminProducts />} />
             <Route path="*" element={<Home />} />
           </Routes>
         </main>
