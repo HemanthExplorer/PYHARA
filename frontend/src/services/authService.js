@@ -2,11 +2,12 @@
  * PYHARA — Admin Authentication Service Layer
  * 
  * Interacts with FastAPI Auth APIs:
- * POST http://127.0.0.1:8000/api/auth/login
- * GET  http://127.0.0.1:8000/api/auth/me
+ * POST /api/auth/login
+ * GET  /api/auth/me
  */
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api/auth';
+const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
+const API_BASE_URL = `http://${getHost()}:8000/api/auth`;
 const TOKEN_KEY = 'pyhara_admin_token';
 
 export function getStoredToken() {
@@ -36,7 +37,10 @@ export function removeStoredToken() {
 }
 
 export async function login(username, password) {
-  const res = await fetch(`${API_BASE_URL}/login`, {
+  const host = getHost();
+  const loginUrl = `http://${host}:8000/api/auth/login`;
+
+  const res = await fetch(loginUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -49,7 +53,13 @@ export async function login(username, password) {
     let errorDetail = 'Invalid username or password';
     try {
       const errJson = await res.json();
-      if (errJson.detail) errorDetail = errJson.detail;
+      if (errJson.detail) {
+        if (typeof errJson.detail === 'string') {
+          errorDetail = errJson.detail;
+        } else if (Array.isArray(errJson.detail)) {
+          errorDetail = errJson.detail.map((e) => e.msg).join(', ');
+        }
+      }
     } catch {}
     const err = new Error(errorDetail);
     err.status = res.status;
@@ -63,11 +73,14 @@ export async function login(username, password) {
   return data;
 }
 
-export async function getCurrentUser() {
-  const token = getStoredToken();
+export async function getCurrentUser(overrideToken = null) {
+  const token = overrideToken || getStoredToken();
   if (!token) return null;
 
-  const res = await fetch(`${API_BASE_URL}/me`, {
+  const host = getHost();
+  const meUrl = `http://${host}:8000/api/auth/me`;
+
+  const res = await fetch(meUrl, {
     method: 'GET',
     headers: {
       'Accept': 'application/json',

@@ -52,7 +52,6 @@ export default function OrderConfirmation() {
         currency: rzpData.currency || 'INR',
         name: 'PYHARA',
         description: `Payment for Order #${order.order_number}`,
-        order_id: rzpData.razorpay_order_id,
         prefill: {
           name: order.customer_name,
           email: order.customer_email,
@@ -63,7 +62,7 @@ export default function OrderConfirmation() {
           try {
             const verifyResult = await verifyPayment(
               order.id,
-              response.razorpay_order_id,
+              response.razorpay_order_id || rzpData.razorpay_order_id,
               response.razorpay_payment_id,
               response.razorpay_signature
             );
@@ -86,6 +85,10 @@ export default function OrderConfirmation() {
           },
         },
       };
+
+      if (rzpData.razorpay_order_id) {
+        options.order_id = rzpData.razorpay_order_id;
+      }
 
       const rzp = new window.Razorpay(options);
       rzp.open();

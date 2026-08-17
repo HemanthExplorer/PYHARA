@@ -2,12 +2,12 @@
  * PYHARA — Razorpay Payment Service Layer
  * 
  * Interacts with FastAPI Payment APIs:
- * POST http://127.0.0.1:8000/api/payments/create-order
- * POST http://127.0.0.1:8000/api/payments/verify
- * GET  http://127.0.0.1:8000/api/payments/order/{order_id}
+ * POST /api/payments/create-order
+ * POST /api/payments/verify
+ * GET  /api/payments/order/{order_id}
  */
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api/payments';
+const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
 
 /**
  * Dynamically loads the official Razorpay Checkout SDK script safely.
@@ -39,7 +39,10 @@ export function loadRazorpayScript() {
 }
 
 export async function createPaymentOrder(orderId) {
-  const res = await fetch(`${API_BASE_URL}/create-order`, {
+  const host = getHost();
+  const url = `http://${host}:8000/api/payments/create-order`;
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -63,7 +66,10 @@ export async function createPaymentOrder(orderId) {
 }
 
 export async function verifyPayment(orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature) {
-  const res = await fetch(`${API_BASE_URL}/verify`, {
+  const host = getHost();
+  const url = `http://${host}:8000/api/payments/verify`;
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -93,8 +99,10 @@ export async function verifyPayment(orderId, razorpayOrderId, razorpayPaymentId,
 
 export async function getPaymentForOrder(orderId) {
   if (!orderId) return null;
+  const host = getHost();
+  const url = `http://${host}:8000/api/payments/order/${encodeURIComponent(orderId)}`;
 
-  const res = await fetch(`${API_BASE_URL}/order/${encodeURIComponent(orderId)}`, {
+  const res = await fetch(url, {
     method: 'GET',
     headers: { 'Accept': 'application/json' },
   });

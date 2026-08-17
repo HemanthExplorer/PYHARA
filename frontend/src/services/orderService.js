@@ -2,15 +2,15 @@
  * PYHARA — Order Service Layer
  * 
  * Interacts with FastAPI Order REST API:
- * POST http://127.0.0.1:8000/api/orders
- * GET  http://127.0.0.1:8000/api/orders
- * GET  http://127.0.0.1:8000/api/orders/{id}
- * PUT  http://127.0.0.1:8000/api/orders/{id}/status
+ * POST /api/orders
+ * GET  /api/orders
+ * GET  /api/orders/{id}
+ * PUT  /api/orders/{id}/status
  */
 
 import { getStoredToken } from './authService';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api/orders';
+const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
 
 function getAuthHeaders() {
   const token = getStoredToken();
@@ -22,7 +22,10 @@ function getAuthHeaders() {
 }
 
 export async function createOrder(orderPayload) {
-  const res = await fetch(API_BASE_URL, {
+  const host = getHost();
+  const url = `http://${host}:8000/api/orders`;
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -54,8 +57,10 @@ export async function createOrder(orderPayload) {
 
 export async function getOrderById(orderIdentifier) {
   if (!orderIdentifier) return null;
+  const host = getHost();
+  const url = `http://${host}:8000/api/orders/${encodeURIComponent(orderIdentifier)}`;
 
-  const res = await fetch(`${API_BASE_URL}/${encodeURIComponent(orderIdentifier)}`, {
+  const res = await fetch(url, {
     method: 'GET',
     headers: { 'Accept': 'application/json' },
   });
@@ -72,7 +77,10 @@ export async function getOrderById(orderIdentifier) {
 }
 
 export async function getAdminOrders() {
-  const res = await fetch(API_BASE_URL, {
+  const host = getHost();
+  const url = `http://${host}:8000/api/orders`;
+
+  const res = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -86,7 +94,10 @@ export async function getAdminOrders() {
 }
 
 export async function updateOrderStatus(orderId, newStatus) {
-  const res = await fetch(`${API_BASE_URL}/${encodeURIComponent(orderId)}/status`, {
+  const host = getHost();
+  const url = `http://${host}:8000/api/orders/${encodeURIComponent(orderId)}/status`;
+
+  const res = await fetch(url, {
     method: 'PUT',
     headers: {
       ...getAuthHeaders(),

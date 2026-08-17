@@ -133,29 +133,25 @@ export default function Checkout() {
       return;
     }
 
-    // 5. Open Razorpay Test Mode Checkout Modal
+    // 5. Open REAL Razorpay Checkout Overlay
     const options = {
       key: rzpData.key_id,
       amount: rzpData.amount,
       currency: rzpData.currency || 'INR',
       name: 'PYHARA',
       description: 'PYHARA Artisan Crafts Payment',
-      order_id: rzpData.razorpay_order_id,
       prefill: {
         name: formData.customer_name.trim(),
         email: formData.customer_email.trim(),
         contact: formData.customer_phone.trim(),
       },
-      theme: {
-        color: '#b85a3c',
-      },
+      theme: { color: '#b85a3c' },
       handler: async function (response) {
         setStatusMessage('Verifying payment signature...');
         try {
-          // Send signature details to backend for HMAC verification
           const verifyResult = await verifyPayment(
             createdOrder.id,
-            response.razorpay_order_id,
+            response.razorpay_order_id || rzpData.razorpay_order_id,
             response.razorpay_payment_id,
             response.razorpay_signature
           );
@@ -181,12 +177,15 @@ export default function Checkout() {
           setSubmitting(false);
           setStatusMessage(null);
           showToast('Payment was not completed.');
-          // Redirect to order page so customer can retry payment
           clearCart();
           navigate(`/order/${createdOrder.id}`);
         },
       },
     };
+
+    if (rzpData.razorpay_order_id) {
+      options.order_id = rzpData.razorpay_order_id;
+    }
 
     try {
       const razorpayInstance = new window.Razorpay(options);

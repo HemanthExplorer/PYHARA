@@ -2,15 +2,15 @@
  * PYHARA — Product Service Layer
  * 
  * Interacts with the FastAPI backend products API:
- * GET http://127.0.0.1:8000/api/products
- * GET http://127.0.0.1:8000/api/products/{id}
+ * GET /api/products
+ * GET /api/products/{id}
  * 
  * Normalizes backend field `alt_text` -> `altText` and preserves `stock_quantity`.
  */
 
 import { DEMO_PRODUCTS, FUTURE_CATEGORIES } from '../data/products';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api/products';
+const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
 
 /**
  * Normalizes backend product schema (`alt_text`) to match frontend prop naming (`altText`).
@@ -34,8 +34,11 @@ export function normalizeProduct(p) {
 }
 
 export async function getProducts() {
+  const host = getHost();
+  const url = `http://${host}:8000/api/products`;
+
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await fetch(url, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -59,9 +62,11 @@ export async function getProducts() {
 
 export async function getProductById(id) {
   if (!id) return null;
+  const host = getHost();
+  const url = `http://${host}:8000/api/products/${encodeURIComponent(id)}`;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/${encodeURIComponent(id)}`, {
+    const res = await fetch(url, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',

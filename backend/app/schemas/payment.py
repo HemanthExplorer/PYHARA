@@ -14,6 +14,7 @@ class PaymentOrderResponse(BaseModel):
     amount: int  # Amount in paise (integer)
     currency: str = "INR"
     key_id: str
+    is_mock: bool = False
 
 
 class PaymentVerifyRequest(BaseModel):

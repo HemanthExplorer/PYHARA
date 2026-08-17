@@ -28,8 +28,12 @@ export default function AdminLogin() {
 
     setSubmitting(true);
     try {
-      await login(username.trim(), password.trim());
-      navigate('/admin/products', { replace: true });
+      const user = await login(username.trim(), password.trim());
+      if (user && user.is_admin) {
+        navigate('/admin/products', { replace: true });
+      } else {
+        setErrorMessage('Invalid username or password.');
+      }
     } catch (err) {
       console.error('Admin login error:', err);
       setErrorMessage(err.message || 'Invalid username or password.');

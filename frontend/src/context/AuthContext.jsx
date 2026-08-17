@@ -19,8 +19,8 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      const currentUser = await authService.getCurrentUser();
-      if (currentUser && currentUser.is_active) {
+      const currentUser = await authService.getCurrentUser(storedToken);
+      if (currentUser && currentUser.is_active && currentUser.is_admin) {
         setUser(currentUser);
         setToken(storedToken);
       } else {
@@ -44,8 +44,20 @@ export function AuthProvider({ children }) {
 
   const handleLogin = async (username, password) => {
     const data = await authService.login(username, password);
+    if (!data || !data.access_token) {
+      throw new Error('Invalid username or password');
+    }
     setToken(data.access_token);
-    const currentUser = await authService.getCurrentUser();
+
+    // Fetch user profile immediately using fresh token to prevent race condition
+    const currentUser = await authService.getCurrentUser(data.access_token);
+    if (!currentUser || !currentUser.is_active || !currentUser.is_admin) {
+      authService.removeStoredToken();
+      setToken(null);
+      setUser(null);
+      throw new Error('Invalid username or password');
+    }
+
     setUser(currentUser);
     return currentUser;
   };

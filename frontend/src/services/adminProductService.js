@@ -2,15 +2,15 @@
  * PYHARA — Admin Product Service Layer
  * 
  * Provides CRUD capabilities with stock_quantity & JWT Authorization against FastAPI:
- * GET    http://127.0.0.1:8000/api/products
- * POST   http://127.0.0.1:8000/api/products
- * PUT    http://127.0.0.1:8000/api/products/{id}
- * DELETE http://127.0.0.1:8000/api/products/{id}
+ * GET    /api/products
+ * POST   /api/products
+ * PUT    /api/products/{id}
+ * DELETE /api/products/{id}
  */
 
 import { getStoredToken } from './authService';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api/products';
+const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
 
 function getAuthHeaders() {
   const token = getStoredToken();
@@ -56,7 +56,10 @@ export function normalizeToBackend(p) {
 }
 
 export async function getAdminProducts() {
-  const res = await fetch(API_BASE_URL, {
+  const host = getHost();
+  const url = `http://${host}:8000/api/products`;
+
+  const res = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -71,8 +74,10 @@ export async function getAdminProducts() {
 
 export async function createProduct(productData) {
   const payload = normalizeToBackend(productData);
+  const host = getHost();
+  const url = `http://${host}:8000/api/products`;
 
-  const res = await fetch(API_BASE_URL, {
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       ...getAuthHeaders(),
@@ -104,8 +109,10 @@ export async function createProduct(productData) {
 
 export async function updateProduct(id, productData) {
   const payload = normalizeToBackend(productData);
+  const host = getHost();
+  const url = `http://${host}:8000/api/products/${encodeURIComponent(id)}`;
 
-  const res = await fetch(`${API_BASE_URL}/${encodeURIComponent(id)}`, {
+  const res = await fetch(url, {
     method: 'PUT',
     headers: {
       ...getAuthHeaders(),
@@ -136,7 +143,10 @@ export async function updateProduct(id, productData) {
 }
 
 export async function deleteProduct(id) {
-  const res = await fetch(`${API_BASE_URL}/${encodeURIComponent(id)}`, {
+  const host = getHost();
+  const url = `http://${host}:8000/api/products/${encodeURIComponent(id)}`;
+
+  const res = await fetch(url, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });

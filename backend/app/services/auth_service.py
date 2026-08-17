@@ -38,6 +38,21 @@ def init_default_admin(db: Session) -> Optional[User]:
 
     existing_user = get_user_by_username(db, username=admin_username)
     if existing_user:
+        # For local development: synchronize stored password hash if ADMIN_PASSWORD environment variable changed
+        if not verify_password(admin_password, existing_user.hashed_password):
+            existing_user.hashed_password = get_password_hash(admin_password)
+            existing_user.is_admin = True
+            existing_user.is_active = True
+            db.commit()
+            db.refresh(existing_user)
+            print(f"Synchronized admin password for account '{admin_username}' from environment configuration.")
+        else:
+            # Ensure is_admin and is_active are set
+            if not existing_user.is_admin or not existing_user.is_active:
+                existing_user.is_admin = True
+                existing_user.is_active = True
+                db.commit()
+                db.refresh(existing_user)
         return existing_user
 
     admin_user = User(
