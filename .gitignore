@@ -4,6 +4,7 @@ node_modules/
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # Python
 __pycache__/
@@ -15,7 +16,6 @@ venv/
 dist/
 build/
 
-
 # IDE
 .vscode/
 
@@ -25,5 +25,6 @@ Thumbs.db
 
 # Logs
 *.log
+
 # Local SQLite databases
 *.db

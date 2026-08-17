@@ -8,7 +8,18 @@
  * PUT  http://127.0.0.1:8000/api/orders/{id}/status
  */
 
+import { getStoredToken } from './authService';
+
 const API_BASE_URL = 'http://127.0.0.1:8000/api/orders';
+
+function getAuthHeaders() {
+  const token = getStoredToken();
+  const headers = { 'Accept': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 export async function createOrder(orderPayload) {
   const res = await fetch(API_BASE_URL, {
@@ -63,7 +74,7 @@ export async function getOrderById(orderIdentifier) {
 export async function getAdminOrders() {
   const res = await fetch(API_BASE_URL, {
     method: 'GET',
-    headers: { 'Accept': 'application/json' },
+    headers: getAuthHeaders(),
   });
 
   if (!res.ok) {
@@ -78,8 +89,8 @@ export async function updateOrderStatus(orderId, newStatus) {
   const res = await fetch(`${API_BASE_URL}/${encodeURIComponent(orderId)}/status`, {
     method: 'PUT',
     headers: {
+      ...getAuthHeaders(),
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
     },
     body: JSON.stringify({ status: newStatus }),
   });

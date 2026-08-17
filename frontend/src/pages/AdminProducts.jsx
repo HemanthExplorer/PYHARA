@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   getAdminProducts,
   createProduct,
@@ -6,8 +7,11 @@ import {
   deleteProduct,
 } from '../services/adminProductService';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function AdminProducts() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const { showToast } = useCart();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -222,9 +226,25 @@ export default function AdminProducts() {
             </Link>
           </div>
 
-          <Link to="/shop" className="btn btn-outline-clay btn-sm">
-            &larr; Back to Shop
-          </Link>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {user && (
+              <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--color-clay)' }}>
+                Admin: {user.username}
+              </span>
+            )}
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                logout();
+                navigate('/admin/login');
+              }}
+            >
+              Logout
+            </button>
+            <Link to="/shop" className="btn btn-outline-clay btn-sm">
+              &larr; Back to Shop
+            </Link>
+          </div>
         </div>
 
         {/* Page Header */}

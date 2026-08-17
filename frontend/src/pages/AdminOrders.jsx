@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getAdminOrders, updateOrderStatus } from '../services/orderService';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function AdminOrders() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const { showToast } = useCart();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -98,9 +101,25 @@ export default function AdminOrders() {
             </Link>
           </div>
 
-          <Link to="/shop" className="btn btn-outline-clay btn-sm">
-            &larr; Back to Shop
-          </Link>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {user && (
+              <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--color-clay)' }}>
+                Admin: {user.username}
+              </span>
+            )}
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                logout();
+                navigate('/admin/login');
+              }}
+            >
+              Logout
+            </button>
+            <Link to="/shop" className="btn btn-outline-clay btn-sm">
+              &larr; Back to Shop
+            </Link>
+          </div>
         </div>
 
         {/* Page Title & Actions */}
