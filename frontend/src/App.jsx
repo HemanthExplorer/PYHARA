@@ -1,59 +1,44 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { CartProvider } from './context/CartContext';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import CartDrawer from './components/CartDrawer';
+import SearchModal from './components/SearchModal';
+import ProductDetailModal from './components/ProductDetailModal';
+import Toast from './components/Toast';
+
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import ProductDetails from './pages/ProductDetails';
+import Checkout from './pages/Checkout';
+import OrderConfirmation from './pages/OrderConfirmation';
 import AdminProducts from './pages/AdminProducts';
-import SearchModal from './components/SearchModal';
-import ProductDetailModal from './components/ProductDetailModal';
-import CartDrawer from './components/CartDrawer';
-import Toast from './components/Toast';
-
-// Scroll restoration helper
-function ScrollToTop() {
-  const { pathname, hash } = useLocation();
-
-  useEffect(() => {
-    if (hash) {
-      const id = hash.replace('#', '');
-      const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-        return;
-      }
-    }
-    window.scrollTo(0, 0);
-  }, [pathname, hash]);
-
-  return null;
-}
+import AdminOrders from './pages/AdminOrders';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <CartProvider>
-        <ScrollToTop />
-        <Header />
-        <main>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/product/:id" element={<ProductDetails />} />
-            <Route path="/admin/products" element={<AdminProducts />} />
-            <Route path="*" element={<Home />} />
-          </Routes>
-        </main>
-        <Footer />
+    <div className="app-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Header />
 
-        {/* Global Overlays & Modals */}
-        <SearchModal />
-        <ProductDetailModal />
-        <CartDrawer />
-        <Toast />
-      </CartProvider>
-    </BrowserRouter>
+      <main style={{ flex: 1 }}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/order/:id" element={<OrderConfirmation />} />
+          <Route path="/admin/products" element={<AdminProducts />} />
+          <Route path="/admin/orders" element={<AdminOrders />} />
+        </Routes>
+      </main>
+
+      <Footer />
+
+      {/* Global Modals & Notifications */}
+      <CartDrawer />
+      <SearchModal />
+      <ProductDetailModal />
+      <Toast />
+    </div>
   );
 }

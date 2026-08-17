@@ -1,44 +1,44 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.db.database import Base, engine
 from app.api.products import router as products_router
+from app.api.orders import router as orders_router
+from app.db.database import engine, Base
 
-# Create database tables automatically on startup if they don't exist
+# Import models so Base metadata is aware of all tables before create_all
+from app.models.product import Product
+from app.models.order import Order, OrderItem
+
+# Create missing database tables safely
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Eco Marketplace API",
-    description="Backend API for Eco Marketplace sustainable e-commerce platform",
-    version="0.2.0"
+    title="PYHARA Eco-Marketplace API",
+    description="Backend API for PYHARA eco-friendly artisan crafts marketplace.",
+    version="0.2.0",
 )
 
-# CORS Middleware configuration (allow ports 3000 and 3001 for dev)
+# Enable CORS for Vite local dev server (port 5173 / default localhost)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include Products API router
 app.include_router(products_router)
+app.include_router(orders_router)
 
 
 @app.get("/")
 def read_root():
     return {
-        "message": "Eco Marketplace API is running",
-        "version": "0.2.0",
-        "docs_url": "/docs"
+        "message": "Welcome to PYHARA Eco-Marketplace API",
+        "docs": "/docs",
+        "health": "/health",
     }
 
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return {"status": "healthy"}

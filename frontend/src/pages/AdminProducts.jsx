@@ -200,8 +200,33 @@ export default function AdminProducts() {
   };
 
   return (
-    <div className="admin-page section" style={{ paddingTop: '3rem' }}>
+    <div className="admin-page section" style={{ paddingTop: '2.5rem' }}>
       <div className="container">
+        {/* Navigation Tabs Header */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '2rem',
+            paddingBottom: '1rem',
+            borderBottom: '1px solid var(--border-subtle)',
+          }}
+        >
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <Link to="/admin/products" className="btn btn-primary btn-sm">
+              Products
+            </Link>
+            <Link to="/admin/orders" className="btn btn-secondary btn-sm">
+              Orders
+            </Link>
+          </div>
+
+          <Link to="/shop" className="btn btn-outline-clay btn-sm">
+            &larr; Back to Shop
+          </Link>
+        </div>
+
         {/* Page Header */}
         <div className="admin-header-row">
           <div>
