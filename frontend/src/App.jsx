@@ -1,41 +1,57 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import Header from './components/Header';
-import Hero from './components/Hero';
-import BrandValues from './components/BrandValues';
-import CollectionPreview from './components/CollectionPreview';
-import ProcessSection from './components/ProcessSection';
-import ArtisanSection from './components/ArtisanSection';
-import SustainabilitySection from './components/SustainabilitySection';
-import FutureCategories from './components/FutureCategories';
-import ClosingCTA from './components/ClosingCTA';
 import Footer from './components/Footer';
+import Home from './pages/Home';
+import Shop from './pages/Shop';
+import ProductDetails from './pages/ProductDetails';
 import SearchModal from './components/SearchModal';
 import ProductDetailModal from './components/ProductDetailModal';
 import CartDrawer from './components/CartDrawer';
 import Toast from './components/Toast';
 
+// Scroll restoration helper
+function ScrollToTop() {
+  const { pathname, hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) {
+      const id = hash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
+    window.scrollTo(0, 0);
+  }, [pathname, hash]);
+
+  return null;
+}
+
 export default function App() {
   return (
-    <CartProvider>
-      <Header />
-      <main>
-        <Hero />
-        <BrandValues />
-        <CollectionPreview />
-        <ProcessSection />
-        <ArtisanSection />
-        <SustainabilitySection />
-        <FutureCategories />
-        <ClosingCTA />
-      </main>
-      <Footer />
+    <BrowserRouter>
+      <CartProvider>
+        <ScrollToTop />
+        <Header />
+        <main>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="*" element={<Home />} />
+          </Routes>
+        </main>
+        <Footer />
 
-      {/* Global Modals, Drawers & Overlays */}
-      <SearchModal />
-      <ProductDetailModal />
-      <CartDrawer />
-      <Toast />
-    </CartProvider>
+        {/* Global Overlays & Modals */}
+        <SearchModal />
+        <ProductDetailModal />
+        <CartDrawer />
+        <Toast />
+      </CartProvider>
+    </BrowserRouter>
   );
 }

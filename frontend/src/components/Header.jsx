@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { openSearch, openCart, totalCount } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen((prev) => !prev);
@@ -13,22 +16,35 @@ export default function Header() {
     setMobileMenuOpen(false);
   };
 
+  const handleSectionLink = (sectionId, e) => {
+    e.preventDefault();
+    closeMobileMenu();
+    if (location.pathname === '/') {
+      const elem = document.getElementById(sectionId);
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      navigate('/#' + sectionId);
+    }
+  };
+
   return (
     <header className="header">
       <div className="container">
         <div className="header-inner">
           {/* Brand Logo */}
-          <a href="#" className="logo-brand" onClick={closeMobileMenu}>
+          <Link to="/" className="logo-brand" onClick={closeMobileMenu}>
             <span className="logo-title">PYHARA</span>
             <span className="logo-tagline">Honor Tradition. Protect Nature.</span>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="nav-desktop" aria-label="Main Navigation">
-            <a href="#shop" className="nav-link">Shop</a>
-            <a href="#story" className="nav-link">Our Story</a>
-            <a href="#artisans" className="nav-link">Craft &amp; Makers</a>
-            <a href="#sustainability" className="nav-link">Sustainability</a>
+            <Link to="/shop" className="nav-link">Shop</Link>
+            <a href="#story" onClick={(e) => handleSectionLink('story', e)} className="nav-link">Our Story</a>
+            <a href="#artisans" onClick={(e) => handleSectionLink('artisans', e)} className="nav-link">Craft &amp; Makers</a>
+            <a href="#sustainability" onClick={(e) => handleSectionLink('sustainability', e)} className="nav-link">Sustainability</a>
           </nav>
 
           {/* Header Right Actions */}
@@ -78,10 +94,10 @@ export default function Header() {
       {/* Mobile Menu Drawer */}
       <div className={`mobile-drawer ${mobileMenuOpen ? 'open' : ''}`}>
         <nav className="mobile-nav-links">
-          <a href="#shop" className="mobile-nav-link" onClick={closeMobileMenu}>Shop</a>
-          <a href="#story" className="mobile-nav-link" onClick={closeMobileMenu}>Our Story</a>
-          <a href="#artisans" className="mobile-nav-link" onClick={closeMobileMenu}>Craft &amp; Makers</a>
-          <a href="#sustainability" className="mobile-nav-link" onClick={closeMobileMenu}>Sustainability</a>
+          <Link to="/shop" className="mobile-nav-link" onClick={closeMobileMenu}>Shop</Link>
+          <a href="#story" className="mobile-nav-link" onClick={(e) => handleSectionLink('story', e)}>Our Story</a>
+          <a href="#artisans" className="mobile-nav-link" onClick={(e) => handleSectionLink('artisans', e)}>Craft &amp; Makers</a>
+          <a href="#sustainability" className="mobile-nav-link" onClick={(e) => handleSectionLink('sustainability', e)}>Sustainability</a>
         </nav>
         <div className="mobile-drawer-footer">
           <p>PYHARA — Honor Tradition. Protect Nature.</p>

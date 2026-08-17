@@ -1,9 +1,7 @@
 import React from 'react';
-import { useCart } from '../context/CartContext';
+import { Link } from 'react-router-dom';
 
 export default function ProductCard({ product }) {
-  const { openProductDetail } = useCart();
-
   if (!product) return null;
 
   const displayPrice = product.price !== null && product.price !== undefined
@@ -28,13 +26,13 @@ export default function ProductCard({ product }) {
 
         <div className="product-footer">
           <span className="product-price">{displayPrice}</span>
-          <button
+          <Link
+            to={`/product/${product.id}`}
             className="btn btn-outline-clay"
-            onClick={() => openProductDetail(product)}
             aria-label={`View product details for ${product.name}`}
           >
             View Product
-          </button>
+          </Link>
         </div>
       </div>
     </article>
