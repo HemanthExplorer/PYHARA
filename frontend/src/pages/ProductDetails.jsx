@@ -85,13 +85,24 @@ export default function ProductDetails() {
 
   const relatedProducts = getRelatedProducts(allProducts, product.id, product.category, 3);
 
+  const isComingSoon = product.availability === 'Coming Soon';
+  const isOutOfStock = !isComingSoon && (product.stock_quantity === 0 || product.availability === 'Out of Stock');
+  const isAvailableForPurchase = !isComingSoon && !isOutOfStock;
+
   const handleAddToCart = () => {
+    if (!isAvailableForPurchase) return;
     addToCart(product, quantity);
   };
 
   const displayPrice = product.price !== null && product.price !== undefined
     ? `₹ ${product.price}`
     : 'Price coming soon';
+
+  const statusLabel = isComingSoon
+    ? 'Coming Soon'
+    : isOutOfStock
+    ? 'Out of Stock'
+    : 'In Stock';
 
   return (
     <div className="product-details-page section" style={{ paddingTop: '2rem' }}>
@@ -134,7 +145,9 @@ export default function ProductDetails() {
 
             <div className="details-price-row">
               <span className="details-price-text">{displayPrice}</span>
-              <span className="coming-soon-badge">{product.availability || 'Coming Soon'}</span>
+              <span className={`status-pill ${isComingSoon ? 'soon' : isOutOfStock ? 'out' : 'in'}`}>
+                {statusLabel}
+              </span>
             </div>
 
             <p className="details-description-text">{product.description}</p>
@@ -145,8 +158,8 @@ export default function ProductDetails() {
                 <span className="spec-value">{product.material}</span>
               </div>
               <div className="spec-row">
-                <span className="spec-label">Availability:</span>
-                <span className="spec-value">{product.availability || 'Coming Soon'}</span>
+                <span className="spec-label">Status:</span>
+                <span className="spec-value">{statusLabel}</span>
               </div>
             </div>
 
@@ -157,6 +170,7 @@ export default function ProductDetails() {
                   className="qty-btn"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   aria-label="Decrease quantity"
+                  disabled={!isAvailableForPurchase}
                 >
                   -
                 </button>
@@ -165,13 +179,19 @@ export default function ProductDetails() {
                   className="qty-btn"
                   onClick={() => setQuantity((q) => q + 1)}
                   aria-label="Increase quantity"
+                  disabled={!isAvailableForPurchase}
                 >
                   +
                 </button>
               </div>
 
-              <button className="btn btn-primary details-add-btn" onClick={handleAddToCart}>
-                Add to Cart
+              <button
+                className="btn btn-primary details-add-btn"
+                onClick={handleAddToCart}
+                disabled={!isAvailableForPurchase}
+                style={!isAvailableForPurchase ? { opacity: 0.6, cursor: 'not-allowed', backgroundColor: 'var(--text-dim)', borderColor: 'var(--text-dim)' } : {}}
+              >
+                {isComingSoon ? 'Coming Soon' : isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
               </button>
             </div>
           </div>

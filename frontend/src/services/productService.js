@@ -5,7 +5,7 @@
  * GET http://127.0.0.1:8000/api/products
  * GET http://127.0.0.1:8000/api/products/{id}
  * 
- * Normalizes backend field `alt_text` -> `altText` for frontend UI compatibility.
+ * Normalizes backend field `alt_text` -> `altText` and preserves `stock_quantity`.
  */
 
 import { DEMO_PRODUCTS, FUTURE_CATEGORIES } from '../data/products';
@@ -17,9 +17,19 @@ const API_BASE_URL = 'http://127.0.0.1:8000/api/products';
  */
 export function normalizeProduct(p) {
   if (!p) return null;
+  const stockQty = p.stock_quantity !== undefined && p.stock_quantity !== null ? p.stock_quantity : 0;
+  
+  // Compute display status
+  let computedAvailability = p.availability;
+  if (p.availability !== 'Coming Soon') {
+    computedAvailability = stockQty > 0 ? 'In Stock' : 'Out of Stock';
+  }
+
   return {
     ...p,
     altText: p.altText || p.alt_text || p.name || 'PYHARA craft product',
+    stock_quantity: stockQty,
+    availability: computedAvailability,
   };
 }
 

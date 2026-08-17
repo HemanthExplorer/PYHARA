@@ -384,6 +384,56 @@ a {
   font-size: 0.875rem;
 }
 
+/* Status Pills */
+.status-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-pill.in {
+  background-color: rgba(46, 67, 52, 0.1);
+  color: var(--color-earth-green);
+  border: 1px solid rgba(46, 67, 52, 0.2);
+}
+
+.status-pill.out {
+  background-color: rgba(184, 90, 60, 0.12);
+  color: var(--color-clay);
+  border: 1px solid rgba(184, 90, 60, 0.25);
+}
+
+.status-pill.soon {
+  background-color: rgba(197, 155, 39, 0.12);
+  color: #967210;
+  border: 1px solid rgba(197, 155, 39, 0.25);
+}
+
+.admin-tag-out {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background-color: rgba(184, 90, 60, 0.12);
+  color: var(--color-clay);
+  border: 1px solid rgba(184, 90, 60, 0.25);
+  display: inline-block;
+}
+
+.admin-tag-soon {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background-color: rgba(197, 155, 39, 0.12);
+  color: #967210;
+  border: 1px solid rgba(197, 155, 39, 0.25);
+  display: inline-block;
+}
+
 /* Hero Section */
 .hero {
   position: relative;

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Text
+from sqlalchemy import Column, String, Float, Text, Integer
 from app.db.database import Base
 
 
@@ -12,6 +12,7 @@ class Product(Base):
     category = Column(String, nullable=True, index=True)
     material = Column(String, nullable=True)
     availability = Column(String, nullable=True)
+    stock_quantity = Column(Integer, default=0, nullable=False)
     image = Column(String, nullable=True)
     alt_text = Column(String, nullable=True)
     badge = Column(String, nullable=True)

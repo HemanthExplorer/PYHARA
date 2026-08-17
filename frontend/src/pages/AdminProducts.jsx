@@ -26,7 +26,8 @@ export default function AdminProducts() {
     price: '',
     category: 'Ganesh Idols',
     material: '',
-    availability: 'Coming Soon',
+    availability: 'In Stock',
+    stock_quantity: 5,
     image: '/images/products/',
     altText: '',
     badge: 'First Collection',
@@ -75,7 +76,8 @@ export default function AdminProducts() {
       price: '',
       category: 'Ganesh Idols',
       material: '',
-      availability: 'Coming Soon',
+      availability: 'In Stock',
+      stock_quantity: 5,
       image: '/images/products/classic-ganesh.jpg',
       altText: '',
       badge: 'First Collection',
@@ -92,7 +94,8 @@ export default function AdminProducts() {
       price: prod.price !== null && prod.price !== undefined ? String(prod.price) : '',
       category: prod.category || 'Ganesh Idols',
       material: prod.material || '',
-      availability: prod.availability || 'Coming Soon',
+      availability: prod.availability || 'In Stock',
+      stock_quantity: prod.stock_quantity !== undefined ? prod.stock_quantity : 0,
       image: prod.image || '/images/products/',
       altText: prod.altText || prod.alt_text || '',
       badge: prod.badge || '',
@@ -142,6 +145,12 @@ export default function AdminProducts() {
       return;
     }
 
+    const stockQtyNum = parseInt(formData.stock_quantity, 10);
+    if (isNaN(stockQtyNum) || stockQtyNum < 0) {
+      showToast('Stock Quantity must be a non-negative integer.');
+      return;
+    }
+
     setSaving(true);
     try {
       if (isEditing) {
@@ -153,6 +162,7 @@ export default function AdminProducts() {
           category: formData.category,
           material: formData.material,
           availability: formData.availability,
+          stock_quantity: stockQtyNum,
           image: formData.image,
           altText: formData.altText,
           badge: formData.badge,
@@ -160,7 +170,7 @@ export default function AdminProducts() {
         showToast('Product updated successfully.');
       } else {
         // Send payload for POST /api/products
-        await createProduct(formData);
+        await createProduct({ ...formData, stock_quantity: stockQtyNum });
         showToast('Product created successfully.');
       }
       setIsFormModalOpen(false);
@@ -196,9 +206,9 @@ export default function AdminProducts() {
         <div className="admin-header-row">
           <div>
             <span className="section-tag">Internal Management</span>
-            <h1 className="admin-title font-serif">Admin Product Management</h1>
+            <h1 className="admin-title font-serif">Admin Product &amp; Stock Management</h1>
             <p className="admin-subtitle">
-              Manage catalog items, create new products, edit specifications, or remove items.
+              Manage catalog items, track stock quantities, update specifications, or remove items.
             </p>
           </div>
 
@@ -216,7 +226,7 @@ export default function AdminProducts() {
         {loading && (
           <div className="shop-empty-state" style={{ padding: '5rem 1rem', marginTop: '2rem' }}>
             <h3 className="empty-title">Loading products...</h3>
-            <p className="empty-desc">Fetching catalog data from FastAPI server.</p>
+            <p className="empty-desc">Fetching catalog and inventory data from FastAPI server.</p>
           </div>
         )}
 
@@ -233,7 +243,7 @@ export default function AdminProducts() {
           </div>
         )}
 
-        {/* Product Table / Cards View */}
+        {/* Product Table View */}
         {!loading && !error && (
           <div className="admin-table-wrapper" style={{ marginTop: '2.5rem' }}>
             {products.length === 0 ? (
@@ -250,7 +260,8 @@ export default function AdminProducts() {
                       <th>ID / Name</th>
                       <th>Category</th>
                       <th>Material</th>
-                      <th>Availability</th>
+                      <th>Stock Qty</th>
+                      <th>Status</th>
                       <th>Price</th>
                       <th style={{ textAlign: 'right' }}>Actions</th>
                     </tr>
@@ -261,6 +272,12 @@ export default function AdminProducts() {
                         prod.price !== null && prod.price !== undefined
                           ? `₹ ${prod.price}`
                           : 'Price coming soon';
+                      
+                      const isComingSoon = prod.availability === 'Coming Soon';
+                      const isInStock = !isComingSoon && prod.stock_quantity > 0;
+                      const statusClass = isComingSoon ? 'admin-tag-soon' : (isInStock ? 'admin-tag-avail' : 'admin-tag-out');
+                      const statusText = isComingSoon ? 'Coming Soon' : (isInStock ? 'In Stock' : 'Out of Stock');
+
                       return (
                         <tr key={prod.id}>
                           <td>
@@ -276,8 +293,11 @@ export default function AdminProducts() {
                             <span className="admin-tag-cat">{prod.category}</span>
                           </td>
                           <td className="admin-text-muted">{prod.material}</td>
+                          <td style={{ fontWeight: '700' }}>
+                            {prod.stock_quantity} units
+                          </td>
                           <td>
-                            <span className="admin-tag-avail">{prod.availability || 'Coming Soon'}</span>
+                            <span className={statusClass}>{statusText}</span>
                           </td>
                           <td className="admin-price-cell">{priceLabel}</td>
                           <td style={{ textAlign: 'right' }}>
@@ -329,12 +349,12 @@ export default function AdminProducts() {
 
             <div className="admin-modal-header">
               <h2 className="admin-modal-title font-serif">
-                {isEditing ? 'Edit Product Specifications' : 'Add New Product'}
+                {isEditing ? 'Edit Product & Inventory' : 'Add New Product'}
               </h2>
               <p className="admin-modal-sub">
                 {isEditing
-                  ? `Updating specifications for ID: ${formData.id}`
-                  : 'Enter factual product information to publish to catalog.'}
+                  ? `Updating specifications and stock for ID: ${formData.id}`
+                  : 'Enter product specifications and initial stock count.'}
               </p>
             </div>
 
@@ -412,13 +432,32 @@ export default function AdminProducts() {
                   <label htmlFor="prod-availability" className="form-label">
                     Availability <span className="req">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="prod-availability"
                     name="availability"
                     className="form-input"
-                    placeholder="e.g. Coming Soon"
                     value={formData.availability}
+                    onChange={handleFormChange}
+                    disabled={saving}
+                    required
+                  >
+                    <option value="In Stock">In Stock / Normal</option>
+                    <option value="Coming Soon">Coming Soon</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="prod-stock" className="form-label">
+                    Stock Quantity <span className="req">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    id="prod-stock"
+                    name="stock_quantity"
+                    className="form-input"
+                    placeholder="e.g. 10"
+                    value={formData.stock_quantity}
                     onChange={handleFormChange}
                     disabled={saving}
                     required
@@ -437,6 +476,22 @@ export default function AdminProducts() {
                     className="form-input"
                     placeholder="Leave empty for 'Price coming soon'"
                     value={formData.price}
+                    onChange={handleFormChange}
+                    disabled={saving}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="prod-badge" className="form-label">
+                    Badge <span className="opt">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="prod-badge"
+                    name="badge"
+                    className="form-input"
+                    placeholder="e.g. First Collection"
+                    value={formData.badge}
                     onChange={handleFormChange}
                     disabled={saving}
                   />
@@ -473,22 +528,6 @@ export default function AdminProducts() {
                     onChange={handleFormChange}
                     disabled={saving}
                     required
-                  />
-                </div>
-
-                <div className="form-group full-width">
-                  <label htmlFor="prod-badge" className="form-label">
-                    Badge <span className="opt">(Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="prod-badge"
-                    name="badge"
-                    className="form-input"
-                    placeholder="e.g. First Collection"
-                    value={formData.badge}
-                    onChange={handleFormChange}
-                    disabled={saving}
                   />
                 </div>
 

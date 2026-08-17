@@ -8,6 +8,15 @@ export default function ProductCard({ product }) {
     ? `₹ ${product.price}`
     : 'Price coming soon';
 
+  const isComingSoon = product.availability === 'Coming Soon';
+  const isOutOfStock = !isComingSoon && (product.stock_quantity === 0 || product.availability === 'Out of Stock');
+
+  const statusLabel = isComingSoon
+    ? 'Coming Soon'
+    : isOutOfStock
+    ? 'Out of Stock'
+    : 'In Stock';
+
   return (
     <article className="product-card">
       <div className="product-image-area">
@@ -20,7 +29,13 @@ export default function ProductCard({ product }) {
       </div>
 
       <div className="product-info">
-        <span className="product-category-label">{product.category}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+          <span className="product-category-label">{product.category}</span>
+          <span className={`status-pill ${isComingSoon ? 'soon' : isOutOfStock ? 'out' : 'in'}`}>
+            {statusLabel}
+          </span>
+        </div>
+
         <h3 className="product-name">{product.name}</h3>
         <p className="product-descriptor">{product.material}</p>
 

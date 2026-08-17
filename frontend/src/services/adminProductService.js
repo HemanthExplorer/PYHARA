@@ -1,7 +1,7 @@
 /**
  * PYHARA — Admin Product Service Layer
  * 
- * Provides CRUD capabilities against the FastAPI products REST API:
+ * Provides CRUD capabilities with stock_quantity against FastAPI:
  * GET    http://127.0.0.1:8000/api/products
  * POST   http://127.0.0.1:8000/api/products
  * PUT    http://127.0.0.1:8000/api/products/{id}
@@ -15,6 +15,7 @@ export function normalizeFromBackend(p) {
   return {
     ...p,
     altText: p.altText || p.alt_text || p.name || 'PYHARA product image',
+    stock_quantity: p.stock_quantity !== undefined && p.stock_quantity !== null ? parseInt(p.stock_quantity, 10) : 0,
   };
 }
 
@@ -34,6 +35,13 @@ export function normalizeToBackend(p) {
   } else if (typeof payload.price === 'string') {
     const parsed = parseFloat(payload.price);
     payload.price = isNaN(parsed) ? null : parsed;
+  }
+
+  // Convert stock_quantity to non-negative integer
+  if (payload.stock_quantity === '' || payload.stock_quantity === undefined || payload.stock_quantity === null) {
+    payload.stock_quantity = 0;
+  } else {
+    payload.stock_quantity = Math.max(0, parseInt(payload.stock_quantity, 10) || 0);
   }
 
   return payload;
@@ -69,7 +77,13 @@ export async function createProduct(productData) {
     let errorDetail = `HTTP ${res.status}`;
     try {
       const errJson = await res.json();
-      if (errJson.detail) errorDetail = errJson.detail;
+      if (errJson.detail) {
+        if (Array.isArray(errJson.detail)) {
+          errorDetail = errJson.detail.map((e) => e.msg).join(', ');
+        } else {
+          errorDetail = errJson.detail;
+        }
+      }
     } catch {}
     throw new Error(`Product creation failed: ${errorDetail}`);
   }
@@ -94,7 +108,13 @@ export async function updateProduct(id, productData) {
     let errorDetail = `HTTP ${res.status}`;
     try {
       const errJson = await res.json();
-      if (errJson.detail) errorDetail = errJson.detail;
+      if (errJson.detail) {
+        if (Array.isArray(errJson.detail)) {
+          errorDetail = errJson.detail.map((e) => e.msg).join(', ');
+        } else {
+          errorDetail = errJson.detail;
+        }
+      }
     } catch {}
     throw new Error(`Product update failed: ${errorDetail}`);
   }
