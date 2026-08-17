@@ -19,10 +19,10 @@ export default function Hero() {
             </p>
 
             <div className="hero-ctas">
-              <a href="#collection" className="btn btn-primary">
+              <a href="#shop" className="btn btn-primary">
                 Explore the Collection
               </a>
-              <a href="#values" className="btn btn-secondary">
+              <a href="#story" className="btn btn-secondary">
                 Our Story
               </a>
             </div>

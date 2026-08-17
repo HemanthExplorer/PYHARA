@@ -25,7 +25,7 @@ export default function BrandValues() {
   ];
 
   return (
-    <section className="section" id="values">
+    <section className="section" id="story">
       <div className="container">
         <div className="section-header">
           <span className="section-tag">Our Guiding Philosophy</span>

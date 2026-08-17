@@ -1,48 +1,55 @@
 /**
- * PYHARA — Demonstration Product Data (v0.2 Prototype)
+ * PYHARA — Product Data (v0.2.1 Prototype)
  * 
- * NOTE: These entries serve as temporary demonstration data for UI layout and presentation.
- * Material descriptors, pricing, and image paths represent placeholder specifications
- * until official product catalogs and database integrations are connected.
+ * NOTE: All entries reflect factual demonstration product specifications.
+ * Prices remain null ("Price coming soon") until official product pricing is finalized.
  */
 
 export const DEMO_PRODUCTS = [
   {
-    id: "demo-ganesh-01",
+    id: "classic-ganesh",
     name: "The Classic Ganesh",
     category: "Natural Ganesh Idols",
-    materialDescriptor: "Traditional Clay Formulation (Demo Placeholder)",
-    pricePlaceholder: "₹ 1,299",
+    material: "Natural clay formulation",
+    description: "A traditional Ganesh idol design created with unbaked natural clay and simple traditional finishing.",
+    price: null,
+    availability: "Coming Soon",
     image: "/images/products/classic-ganesh.jpg",
     altText: "Demonstration preview of The Classic Ganesh idol placement",
     badge: "First Collection"
   },
   {
-    id: "demo-ganesh-02",
+    id: "earth-ganesh",
     name: "The Earth Ganesh",
     category: "Natural Ganesh Idols",
-    materialDescriptor: "Earthen Clay Finish (Demo Placeholder)",
-    pricePlaceholder: "₹ 1,499",
+    material: "Earthen clay finish",
+    description: "An unadorned earthen clay idol showcasing the natural texture and shade of raw clay earth.",
+    price: null,
+    availability: "Coming Soon",
     image: "/images/products/earth-ganesh.jpg",
     altText: "Demonstration preview of The Earth Ganesh idol placement",
     badge: "First Collection"
   },
   {
-    id: "demo-ganesh-03",
+    id: "artisan-ganesh",
     name: "The Artisan Ganesh",
     category: "Natural Ganesh Idols",
-    materialDescriptor: "Hand-molded Craft Specification (Demo Placeholder)",
-    pricePlaceholder: "₹ 1,899",
+    material: "Hand-molded clay",
+    description: "A finely detailed idol crafted using traditional hand-molding techniques passed down by heritage clay makers.",
+    price: null,
+    availability: "Coming Soon",
     image: "/images/products/artisan-ganesh.jpg",
     altText: "Demonstration preview of The Artisan Ganesh idol placement",
     badge: "First Collection"
   },
   {
-    id: "demo-ganesh-04",
+    id: "minimal-ganesh",
     name: "The Minimal Ganesh",
     category: "Natural Ganesh Idols",
-    materialDescriptor: "Contemporary Sculpted Clay (Demo Placeholder)",
-    pricePlaceholder: "₹ 1,199",
+    material: "Contemporary sculpted clay",
+    description: "A clean, contemporary interpretation featuring simplified geometric lines in natural sculpted clay.",
+    price: null,
+    availability: "Coming Soon",
     image: "/images/products/minimal-ganesh.jpg",
     altText: "Demonstration preview of The Minimal Ganesh idol placement",
     badge: "First Collection"

@@ -4,7 +4,7 @@ import { DEMO_PRODUCTS } from '../data/products';
 
 export default function CollectionPreview() {
   return (
-    <section className="section" id="collection" style={{ backgroundColor: 'var(--bg-surface)' }}>
+    <section className="section" id="shop" style={{ backgroundColor: 'var(--bg-surface)' }}>
       <div className="container">
         <div className="section-header">
           <span className="section-tag">First Collection</span>
