@@ -309,7 +309,10 @@ export default function OrderConfirmation() {
         </div>
 
         {/* Actions */}
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link to={`/orders/${order.id}`} className="btn btn-secondary" style={{ padding: '0.9rem 2rem' }}>
+            Track Order Progress &rarr;
+          </Link>
           <Link to="/shop" className="btn btn-primary" style={{ padding: '0.9rem 2.5rem' }}>
             Continue Shopping
           </Link>

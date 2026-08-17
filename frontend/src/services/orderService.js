@@ -5,6 +5,7 @@
  * POST /api/orders
  * GET  /api/orders
  * GET  /api/orders/{id}
+ * PUT  /api/orders/{id}/cancel
  * PUT  /api/orders/{id}/status
  */
 
@@ -71,6 +72,32 @@ export async function getOrderById(orderIdentifier) {
 
   if (!res.ok) {
     throw new Error(`Failed to load order: HTTP ${res.status}`);
+  }
+
+  return await res.json();
+}
+
+export async function cancelCustomerOrder(orderId) {
+  const host = getHost();
+  const url = `http://${host}:8000/api/orders/${encodeURIComponent(orderId)}/cancel`;
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Accept': 'application/json' },
+  });
+
+  if (!res.ok) {
+    let errorDetail = `HTTP ${res.status}`;
+    try {
+      const errJson = await res.json();
+      if (errJson.detail) {
+        errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+      }
+    } catch {}
+
+    const err = new Error(errorDetail);
+    err.status = res.status;
+    throw err;
   }
 
   return await res.json();

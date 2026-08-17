@@ -12,7 +12,6 @@ from app.schemas.order import OrderCreate
 def generate_order_number(db: Session) -> str:
     year = datetime.utcnow().year
     prefix = f"PYH-{year}-"
-    # Find max sequence for current year
     last_order = (
         db.query(Order)
         .filter(Order.order_number.like(f"{prefix}%"))
@@ -162,6 +161,52 @@ def update_order_status(db: Session, order_id: str, new_status: str) -> Order:
                     prod.availability = "In Stock"
 
     order.status = new_status
+    order.updated_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+def cancel_order_by_customer(db: Session, order_id: str) -> Order:
+    """
+    Customer-facing order cancellation: Allows cancelling only when order status is Pending or Confirmed.
+    Restores stock exactly once and handles idempotency cleanly.
+    """
+    order = get_order(db, order_id)
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order '{order_id}' not found.",
+        )
+
+    if order.status == "Cancelled":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Order is already cancelled.",
+        )
+
+    if order.status in {"Shipped", "Delivered"}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot cancel an order that is already {order.status.lower()}.",
+        )
+
+    if order.status not in {"Pending", "Confirmed"}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot cancel order in state '{order.status}'.",
+        )
+
+    # Perform stock restoration
+    for item in order.items:
+        prod = db.query(Product).filter(Product.id == item.product_id).first()
+        if prod:
+            prod.stock_quantity += item.quantity
+            if prod.stock_quantity > 0 and prod.availability != "Coming Soon":
+                prod.availability = "In Stock"
+
+    order.status = "Cancelled"
     order.updated_at = datetime.utcnow()
 
     db.commit()

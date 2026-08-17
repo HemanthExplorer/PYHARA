@@ -13,7 +13,9 @@ import Shop from './pages/Shop';
 import ProductDetails from './pages/ProductDetails';
 import Checkout from './pages/Checkout';
 import OrderConfirmation from './pages/OrderConfirmation';
+import OrderTracking from './pages/OrderTracking';
 import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
 import AdminProducts from './pages/AdminProducts';
 import AdminOrders from './pages/AdminOrders';
 
@@ -29,7 +31,16 @@ export default function App() {
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/order/:id" element={<OrderConfirmation />} />
+          <Route path="/orders/:id" element={<OrderTracking />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedAdminRoute>
+                <AdminDashboard />
+              </ProtectedAdminRoute>
+            }
+          />
           <Route
             path="/admin/products"
             element={

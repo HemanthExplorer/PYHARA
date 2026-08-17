@@ -14,6 +14,7 @@ from app.api.products import router as products_router
 from app.api.orders import router as orders_router
 from app.api.auth import router as auth_router
 from app.api.payments import router as payments_router
+from app.api.admin import router as admin_router
 from app.db.database import engine, Base, SessionLocal
 
 # Import models so Base metadata is aware of all tables before create_all
@@ -49,7 +50,7 @@ finally:
 app = FastAPI(
     title="PYHARA Eco-Marketplace API",
     description="Backend API for PYHARA eco-friendly artisan crafts marketplace.",
-    version="0.4.0",
+    version="0.5.0",
 )
 
 # Enable CORS for Vite local dev server (port 5173 / default localhost)
@@ -65,6 +66,7 @@ app.include_router(products_router)
 app.include_router(orders_router)
 app.include_router(auth_router)
 app.include_router(payments_router)
+app.include_router(admin_router)
 
 
 @app.get("/")

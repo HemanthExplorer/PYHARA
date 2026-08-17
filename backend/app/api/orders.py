@@ -32,7 +32,7 @@ def get_admin_orders(
 @router.get("/{order_id}", response_model=OrderResponse)
 def get_order(order_id: str, db: Session = Depends(get_db)):
     """
-    Public / Customer order confirmation lookup: Retrieves a single order by ID or order_number.
+    Public / Customer order confirmation & tracking lookup: Retrieves a single order by ID or order_number.
     """
     order = order_service.get_order(db=db, order_identifier=order_id)
     if not order:
@@ -41,6 +41,15 @@ def get_order(order_id: str, db: Session = Depends(get_db)):
             detail=f"Order '{order_id}' not found.",
         )
     return order
+
+
+@router.put("/{order_id}/cancel", response_model=OrderResponse)
+def cancel_customer_order(order_id: str, db: Session = Depends(get_db)):
+    """
+    Customer-facing order cancellation: Allows cancelling only when order status is Pending or Confirmed.
+    Restores inventory stock exactly once.
+    """
+    return order_service.cancel_order_by_customer(db=db, order_id=order_id)
 
 
 @router.put("/{order_id}/status", response_model=OrderResponse)
