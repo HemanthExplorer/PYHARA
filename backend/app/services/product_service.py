@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from app.models.product import Product
-from app.schemas.product import ProductCreate
+from app.schemas.product import ProductCreate, ProductUpdate
 
 
 def get_products(db: Session) -> List[Product]:
@@ -29,3 +29,27 @@ def create_product(db: Session, product: ProductCreate) -> Product:
     db.commit()
     db.refresh(db_product)
     return db_product
+
+
+def update_product(db: Session, product_id: str, product_update: ProductUpdate) -> Optional[Product]:
+    db_product = get_product_by_id(db, product_id=product_id)
+    if not db_product:
+        return None
+
+    update_data = product_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_product, field, value)
+
+    db.commit()
+    db.refresh(db_product)
+    return db_product
+
+
+def delete_product(db: Session, product_id: str) -> bool:
+    db_product = get_product_by_id(db, product_id=product_id)
+    if not db_product:
+        return False
+
+    db.delete(db_product)
+    db.commit()
+    return True

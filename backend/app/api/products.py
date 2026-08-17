@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.database import get_db
-from app.schemas.product import Product as ProductSchema, ProductCreate
+from app.schemas.product import Product as ProductSchema, ProductCreate, ProductUpdate
 from app.services import product_service
 
 router = APIRouter(prefix="/api/products", tags=["products"])
@@ -34,3 +34,27 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db)):
             detail="Product with this ID already exists",
         )
     return product_service.create_product(db, product=product)
+
+
+@router.put("/{product_id}", response_model=ProductSchema)
+def update_product(
+    product_id: str, product_update: ProductUpdate, db: Session = Depends(get_db)
+):
+    updated_product = product_service.update_product(
+        db, product_id=product_id, product_update=product_update
+    )
+    if updated_product is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
+        )
+    return updated_product
+
+
+@router.delete("/{product_id}")
+def delete_product(product_id: str, db: Session = Depends(get_db)):
+    success = product_service.delete_product(db, product_id=product_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
+        )
+    return {"message": "Product successfully deleted", "id": product_id}
