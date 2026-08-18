@@ -4,36 +4,49 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from app.models.order import Order, OrderItem
 from app.models.product import Product
 from app.schemas.order import OrderCreate
 
 
 def generate_order_number(db: Session) -> str:
-    year = datetime.utcnow().year
-    prefix = f"PYH-{year}-"
-    last_order = (
-        db.query(Order)
-        .filter(Order.order_number.like(f"{prefix}%"))
-        .order_by(Order.created_at.desc())
-        .first()
-    )
-    if not last_order or not last_order.order_number:
-        seq = 1
-    else:
-        try:
-            parts = last_order.order_number.split("-")
-            seq = int(parts[-1]) + 1
-        except (ValueError, IndexError):
-            seq = db.query(Order).count() + 1
+    prefix = f"PYH-{datetime.utcnow().year}-"
+    seq = db.query(Order).count() + 1
+    candidate = f"{prefix}{seq:04d}"
+    while db.query(Order).filter(Order.order_number == candidate).first():
+        seq += 1
+        candidate = f"{prefix}{seq:04d}"
+    return candidate
 
-    return f"{prefix}{seq:04d}"
+
+from app.services.location_service import check_serviceability
 
 
 def create_order(db: Session, order_in: OrderCreate) -> Order:
     try:
         order_num = generate_order_number(db)
         order_id = str(uuid.uuid4())
+
+        # Enforce PIN code & Location Serviceability against Database
+        pincode_val = order_in.pincode.strip() if order_in.pincode else None
+        if not pincode_val:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A valid 6-digit Indian PIN code is required for order delivery.",
+            )
+
+        svc_res = check_serviceability(db, pincode_val)
+        if not svc_res.serviceable:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=svc_res.message,
+            )
+
+        city_val = order_in.city.strip() if order_in.city else svc_res.city
+        state_val = order_in.state.strip() if order_in.state else svc_res.state
+        delivery_charge_val = svc_res.delivery_charge
+        est_days_val = svc_res.estimated_delivery_days
 
         order = Order(
             id=order_id,
@@ -42,6 +55,11 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
             customer_email=order_in.customer_email.strip().lower(),
             customer_phone=order_in.customer_phone.strip(),
             shipping_address=order_in.shipping_address.strip(),
+            pincode=pincode_val,
+            city=city_val,
+            state=state_val,
+            delivery_charge=delivery_charge_val,
+            estimated_delivery_days=est_days_val,
             status="Pending",
             total_amount=None,
         )
@@ -102,11 +120,25 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
             )
             db.add(order_item)
 
-        order.total_amount = None if has_null_price else total_sum
+        # Add server-verified delivery charge to total order sum
+        if not has_null_price:
+            total_sum += Decimal(str(delivery_charge_val or 0))
+            order.total_amount = total_sum
+        else:
+            order.total_amount = None
 
         db.commit()
         db.refresh(order)
         return order
+    except HTTPException:
+        db.rollback()
+        raise
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Order processing conflict due to concurrent submission. Please try again.",
+        )
     except Exception:
         db.rollback()
         raise

@@ -18,6 +18,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminProducts from './pages/AdminProducts';
 import AdminOrders from './pages/AdminOrders';
+import AdminLocations from './pages/AdminLocations';
 
 export default function App() {
   return (
@@ -54,6 +55,14 @@ export default function App() {
             element={
               <ProtectedAdminRoute>
                 <AdminOrders />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/locations"
+            element={
+              <ProtectedAdminRoute>
+                <AdminLocations />
               </ProtectedAdminRoute>
             }
           />

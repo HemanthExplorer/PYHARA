@@ -14,6 +14,11 @@ class Order(Base):
     customer_email = Column(String, nullable=False)
     customer_phone = Column(String, nullable=False)
     shipping_address = Column(Text, nullable=False)
+    pincode = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    state = Column(String, nullable=True)
+    delivery_charge = Column(Numeric(10, 2), default=0.00, nullable=True)
+    estimated_delivery_days = Column(Integer, default=3, nullable=True)
     status = Column(String, default="Pending", nullable=False)
     payment_status = Column(String, default="Pending", nullable=False)  # Pending, Paid, Failed
     total_amount = Column(Numeric(12, 2), nullable=True)

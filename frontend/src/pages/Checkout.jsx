@@ -5,6 +5,8 @@ import { createOrder } from '../services/orderService';
 import { loadRazorpayScript, createPaymentOrder, verifyPayment } from '../services/paymentService';
 import { formatCurrency, formatTotalCurrency } from '../utils/formatCurrency';
 
+import { lookupPincode, checkServiceability } from '../services/locationService';
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { cartItems, clearCart, showToast } = useCart();
@@ -14,11 +16,18 @@ export default function Checkout() {
     customer_email: '',
     customer_phone: '',
     shipping_address: '',
+    pincode: '',
+    city: '',
+    state: '',
   });
 
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+
+  // Location PIN code verification state
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinStatus, setPinStatus] = useState(null); // { valid: bool, serviceable: bool, message: str, delivery_charge: num, days: num }
 
   // Pre-load Razorpay script safely in background on component mount
   useEffect(() => {
@@ -28,6 +37,50 @@ export default function Checkout() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === 'pincode') {
+      const cleanVal = value.trim();
+      if (cleanVal.length === 6 && /^[1-9][0-9]{5}$/.test(cleanVal)) {
+        triggerPincodeLookup(cleanVal);
+      } else {
+        setPinStatus(null);
+      }
+    }
+  };
+
+  const triggerPincodeLookup = async (codeToVerify) => {
+    const pin = codeToVerify || formData.pincode.trim();
+    if (!pin || pin.length !== 6) return;
+
+    setPinLoading(true);
+    setPinStatus(null);
+
+    // Query admin-controlled DB serviceability
+    const svcRes = await checkServiceability(pin);
+    setPinLoading(false);
+
+    if (svcRes.serviceable) {
+      setPinStatus({
+        valid: true,
+        serviceable: true,
+        message: svcRes.message,
+        delivery_charge: svcRes.delivery_charge || 0,
+        estimated_delivery_days: svcRes.estimated_delivery_days || 3,
+        city: svcRes.city,
+        state: svcRes.state,
+      });
+      setFormData((prev) => ({
+        ...prev,
+        city: svcRes.city || prev.city || '',
+        state: svcRes.state || prev.state || '',
+      }));
+    } else {
+      setPinStatus({
+        valid: false,
+        serviceable: false,
+        message: svcRes.message || "We currently don't deliver to this location.",
+      });
+    }
   };
 
   // Calculate pricing summary
@@ -52,20 +105,31 @@ export default function Checkout() {
       return;
     }
 
-    if (!formData.customer_name.trim()) {
-      setErrorMessage('Customer name is required.');
+    if (!formData.customer_name.trim() || formData.customer_name.trim().length < 2) {
+      setErrorMessage('Customer name must be at least 2 characters.');
       return;
     }
     if (!formData.customer_email.trim() || !formData.customer_email.includes('@')) {
       setErrorMessage('A valid email address is required.');
       return;
     }
-    if (!formData.customer_phone.trim()) {
-      setErrorMessage('Phone number is required.');
+    const cleanPhone = formData.customer_phone.replace(/[\s\-]/g, '');
+    if (!cleanPhone || !/^(\+91)?[6-9]\d{9}$/.test(cleanPhone)) {
+      setErrorMessage('A valid 10-digit Indian phone number is required (e.g. +91 9876543210).');
       return;
     }
-    if (!formData.shipping_address.trim()) {
-      setErrorMessage('Shipping address is required.');
+    if (!formData.shipping_address.trim() || formData.shipping_address.trim().length < 5) {
+      setErrorMessage('Shipping address must be at least 5 characters.');
+      return;
+    }
+    const cleanPin = formData.pincode.trim();
+    if (!cleanPin || !/^[1-9][0-9]{5}$/.test(cleanPin)) {
+      setErrorMessage('A valid 6-digit Indian PIN code starting with digits 1-9 is required.');
+      return;
+    }
+
+    if (pinStatus && pinStatus.valid === false) {
+      setErrorMessage(pinStatus.message || 'Please enter a valid Indian postal PIN code.');
       return;
     }
 
@@ -80,6 +144,9 @@ export default function Checkout() {
         customer_email: formData.customer_email.trim().toLowerCase(),
         customer_phone: formData.customer_phone.trim(),
         shipping_address: formData.shipping_address.trim(),
+        pincode: cleanPin,
+        city: formData.city.trim() || undefined,
+        state: formData.state.trim() || undefined,
         items: cartItems.map((item) => ({
           product_id: item.product.id,
           quantity: item.quantity,
@@ -410,12 +477,83 @@ export default function Checkout() {
                       name="shipping_address"
                       rows="3"
                       className="form-input"
-                      placeholder="House No, Street, Landmark, City, State, Pincode"
+                      placeholder="House No, Building, Street, Landmark"
                       value={formData.shipping_address}
                       onChange={handleInputChange}
                       disabled={submitting}
                       required
                     ></textarea>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="pincode" className="form-label">
+                      PIN Code <span className="req">*</span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        id="pincode"
+                        name="pincode"
+                        className="form-input"
+                        placeholder="e.g. 560001"
+                        maxLength="6"
+                        value={formData.pincode}
+                        onChange={handleInputChange}
+                        onBlur={() => triggerPincodeLookup()}
+                        disabled={submitting}
+                        required
+                      />
+                    </div>
+                    {pinLoading && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
+                        Verifying postal location...
+                      </span>
+                    )}
+                    {pinStatus && (
+                      <span
+                        style={{
+                          fontSize: '0.8rem',
+                          fontWeight: '500',
+                          marginTop: '0.25rem',
+                          display: 'block',
+                          color: pinStatus.valid ? 'var(--color-earth-green)' : 'var(--color-clay)',
+                        }}
+                      >
+                        {pinStatus.valid ? `✓ ${pinStatus.message}` : `✕ ${pinStatus.message}`}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="city" className="form-label">
+                      City / District
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      className="form-input"
+                      placeholder="e.g. Bengaluru"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label htmlFor="state" className="form-label">
+                      State
+                    </label>
+                    <input
+                      type="text"
+                      id="state"
+                      name="state"
+                      className="form-input"
+                      placeholder="e.g. Karnataka"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      disabled={submitting}
+                    />
                   </div>
                 </div>
               </div>

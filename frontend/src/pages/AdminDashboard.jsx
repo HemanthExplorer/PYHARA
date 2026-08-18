@@ -83,6 +83,9 @@ export default function AdminDashboard() {
             <Link to="/admin/orders" className="btn btn-secondary btn-sm">
               Orders
             </Link>
+            <Link to="/admin/locations" className="btn btn-secondary btn-sm">
+              Locations
+            </Link>
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
