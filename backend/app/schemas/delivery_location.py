@@ -55,3 +55,14 @@ class ServiceabilityResponse(BaseModel):
     estimated_delivery_days: int = 3
     reason: Optional[str] = None
     message: str
+
+
+class ActiveLocationResponse(BaseModel):
+    id: str
+    pincode: str
+    city: str
+    state: str
+    delivery_charge: Decimal
+    estimated_delivery_days: int
+
+    model_config = ConfigDict(from_attributes=True)

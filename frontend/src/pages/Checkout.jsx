@@ -5,7 +5,8 @@ import { createOrder } from '../services/orderService';
 import { loadRazorpayScript, createPaymentOrder, verifyPayment } from '../services/paymentService';
 import { formatCurrency, formatTotalCurrency } from '../utils/formatCurrency';
 
-import { lookupPincode, checkServiceability } from '../services/locationService';
+import { lookupPincode, checkServiceability, getCurrentLocationPIN } from '../services/locationService';
+import LocationSelectorModal from '../components/LocationSelectorModal';
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -27,7 +28,9 @@ export default function Checkout() {
 
   // Location PIN code verification state
   const [pinLoading, setPinLoading] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
   const [pinStatus, setPinStatus] = useState(null); // { valid: bool, serviceable: bool, message: str, delivery_charge: num, days: num }
+  const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false);
 
   // Pre-load Razorpay script safely in background on component mount
   useEffect(() => {
@@ -81,6 +84,42 @@ export default function Checkout() {
         message: svcRes.message || "We currently don't deliver to this location.",
       });
     }
+  };
+
+  const handleUseMyLocation = async () => {
+    setGpsLoading(true);
+    setErrorMessage(null);
+    setPinStatus(null);
+
+    const geoResult = await getCurrentLocationPIN();
+    setGpsLoading(false);
+
+    if (geoResult.success && geoResult.pincode) {
+      setFormData((prev) => ({ ...prev, pincode: geoResult.pincode }));
+      showToast(`📍 Location detected (PIN: ${geoResult.pincode}). Verifying delivery...`);
+      await triggerPincodeLookup(geoResult.pincode);
+    } else {
+      setErrorMessage(geoResult.error || 'Unable to retrieve location. Please enter your PIN code manually.');
+    }
+  };
+
+  const handleSelectLocationFromModal = async (selectedLoc) => {
+    setFormData((prev) => ({
+      ...prev,
+      pincode: selectedLoc.pincode,
+      city: selectedLoc.city,
+      state: selectedLoc.state,
+    }));
+    setPinStatus({
+      valid: true,
+      serviceable: true,
+      message: `Delivery available (${selectedLoc.city}, ${selectedLoc.state}).`,
+      delivery_charge: selectedLoc.delivery_charge || 0,
+      estimated_delivery_days: selectedLoc.estimated_delivery_days || 3,
+      city: selectedLoc.city,
+      state: selectedLoc.state,
+    });
+    showToast(`Selected delivery area: ${selectedLoc.city} (${selectedLoc.pincode}).`);
   };
 
   // Calculate pricing summary
@@ -468,16 +507,45 @@ export default function Checkout() {
                     />
                   </div>
 
+                  {/* Delivery Location Section */}
+                  <div className="form-group full-width" style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <label className="form-label" style={{ margin: 0, fontWeight: '600', color: 'var(--text-heading)' }}>
+                        Delivery Location &amp; Serviceability <span className="req">*</span>
+                      </label>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          type="button"
+                          onClick={handleUseMyLocation}
+                          disabled={gpsLoading || submitting}
+                          className="btn btn-outline"
+                          style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }}
+                        >
+                          {gpsLoading ? 'Detecting GPS...' : '📍 Use My Location'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsSelectorModalOpen(true)}
+                          disabled={submitting}
+                          className="btn btn-outline"
+                          style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }}
+                        >
+                          🔍 Search Location
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="form-group full-width">
                     <label htmlFor="shipping_address" className="form-label">
-                      Shipping Address <span className="req">*</span>
+                      Shipping Address (House No, Building, Street, Landmark) <span className="req">*</span>
                     </label>
                     <textarea
                       id="shipping_address"
                       name="shipping_address"
                       rows="3"
                       className="form-input"
-                      placeholder="House No, Building, Street, Landmark"
+                      placeholder="e.g. #42 Green Village Road, 3rd Block"
                       value={formData.shipping_address}
                       onChange={handleInputChange}
                       disabled={submitting}
@@ -500,13 +568,13 @@ export default function Checkout() {
                         value={formData.pincode}
                         onChange={handleInputChange}
                         onBlur={() => triggerPincodeLookup()}
-                        disabled={submitting}
+                        disabled={submitting || gpsLoading}
                         required
                       />
                     </div>
                     {pinLoading && (
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
-                        Verifying postal location...
+                        Verifying location serviceability...
                       </span>
                     )}
                     {pinStatus && (
@@ -660,7 +728,7 @@ export default function Checkout() {
                 })}
               </div>
 
-              {/* Subtotal & Total Rows */}
+              {/* Subtotal & Delivery Charge Rows */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Subtotal</span>
@@ -668,6 +736,16 @@ export default function Checkout() {
                     {hasNullPrice ? 'Subtotal unavailable' : formatCurrency(subtotalAmount)}
                   </span>
                 </div>
+                {pinStatus && pinStatus.serviceable && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>
+                      Delivery Charge ({pinStatus.estimated_delivery_days} days)
+                    </span>
+                    <span style={{ fontWeight: '600', color: 'var(--color-leaf)' }}>
+                      {pinStatus.delivery_charge > 0 ? formatCurrency(pinStatus.delivery_charge) : 'FREE Delivery'}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Total Calculation Row */}
@@ -690,7 +768,9 @@ export default function Checkout() {
                     color: 'var(--color-clay)',
                   }}
                 >
-                  {hasNullPrice ? 'Total will be confirmed' : formatTotalCurrency(subtotalAmount)}
+                  {hasNullPrice
+                    ? 'Total will be confirmed'
+                    : formatTotalCurrency(subtotalAmount + (pinStatus && pinStatus.serviceable ? Number(pinStatus.delivery_charge || 0) : 0))}
                 </span>
               </div>
 
@@ -720,6 +800,13 @@ export default function Checkout() {
           </div>
         </div>
       </div>
+
+      {/* Location Selection Modal */}
+      <LocationSelectorModal
+        isOpen={isSelectorModalOpen}
+        onClose={() => setIsSelectorModalOpen(false)}
+        onSelectLocation={handleSelectLocationFromModal}
+      />
     </div>
   );
 }

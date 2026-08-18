@@ -194,6 +194,16 @@ def check_serviceability(db: Session, pincode: str) -> ServiceabilityResponse:
     )
 
 
+def get_active_delivery_locations(db: Session) -> List[DeliveryLocation]:
+    """Returns only active customer-serviceable delivery locations."""
+    return (
+        db.query(DeliveryLocation)
+        .filter(DeliveryLocation.is_active.is_(True))
+        .order_by(DeliveryLocation.pincode.asc())
+        .all()
+    )
+
+
 def get_delivery_locations(
     db: Session, search: Optional[str] = None, active_only: Optional[bool] = None
 ) -> List[DeliveryLocation]:

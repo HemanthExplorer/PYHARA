@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.schemas.delivery_location import ServiceabilityResponse
-from app.services.location_service import lookup_pincode, check_serviceability
+from app.schemas.delivery_location import ServiceabilityResponse, ActiveLocationResponse
+from app.services.location_service import lookup_pincode, check_serviceability, get_active_delivery_locations
 
 router = APIRouter(prefix="/api/location", tags=["Location"])
 
@@ -18,6 +18,15 @@ class PincodeResponse(BaseModel):
     district: Optional[str] = None
     source: Optional[str] = None
     error: Optional[str] = None
+
+
+@router.get("/active", response_model=List[ActiveLocationResponse])
+def list_active_locations(db: Session = Depends(get_db)):
+    """
+    Public customer-safe endpoint: Returns only active admin-approved delivery locations.
+    Excludes admin notes and internal metadata.
+    """
+    return get_active_delivery_locations(db)
 
 
 @router.get("/pincode/{pincode}", response_model=PincodeResponse)
