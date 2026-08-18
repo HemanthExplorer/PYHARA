@@ -74,6 +74,7 @@ export default function Checkout() {
       });
       setFormData((prev) => ({
         ...prev,
+        pincode: pin,
         city: svcRes.city || prev.city || '',
         state: svcRes.state || prev.state || '',
       }));

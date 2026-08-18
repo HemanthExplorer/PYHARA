@@ -98,71 +98,100 @@ export async function fetchActiveLocations() {
 }
 
 export async function getCurrentLocationPIN() {
+  const extractCleanPIN = (val) => {
+    if (!val) return null;
+    const digits = String(val).replace(/\D/g, '');
+    if (digits.length === 6 && /^[1-9][0-9]{5}$/.test(digits)) {
+      return digits;
+    }
+    return null;
+  };
+
+  const tryIPLocationFallback = async () => {
+    try {
+      // 1. BigDataCloud IP reverse-geocode
+      const bdcResp = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=en');
+      if (bdcResp.ok) {
+        const bdcData = await bdcResp.json();
+        const pin = extractCleanPIN(bdcData.postcode || bdcData.postalCode);
+        if (pin) {
+          return { success: true, pincode: pin, locality: bdcData.locality || bdcData.city || '' };
+        }
+      }
+    } catch (e) {
+      console.warn('BigDataCloud IP location fallback failed:', e);
+    }
+
+    try {
+      // 2. ipapi.co IP reverse-geocode
+      const ipResp = await fetch('https://ipapi.co/json/');
+      if (ipResp.ok) {
+        const ipData = await ipResp.json();
+        const pin = extractCleanPIN(ipData.postal);
+        if (pin) {
+          return { success: true, pincode: pin, locality: ipData.city || '' };
+        }
+      }
+    } catch (e) {
+      console.warn('ipapi IP location fallback failed:', e);
+    }
+
+    return {
+      success: false,
+      error: 'Could not automatically detect your location. Please enter your PIN code manually or select from active locations.',
+    };
+  };
+
   return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve({ success: false, error: 'Geolocation is not supported by your browser.' });
+    if (!navigator || !navigator.geolocation) {
+      tryIPLocationFallback().then(resolve);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
+
         try {
-          // Free reverse-geocoding via BigDataCloud API
-          const geoUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`;
-          const resp = await fetch(geoUrl);
-          if (resp.ok) {
-            const geoData = await resp.json();
-            const pincode = geoData.postcode || geoData.postalCode;
-            if (pincode && /^[1-9][0-9]{5}$/.test(pincode.trim())) {
-              resolve({
-                success: true,
-                pincode: pincode.trim(),
-                locality: geoData.locality || geoData.city || '',
-              });
+          // 1. BigDataCloud reverse geocode with lat/lon
+          const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`;
+          const bdcResp = await fetch(bdcUrl);
+          if (bdcResp.ok) {
+            const bdcData = await bdcResp.json();
+            const pin = extractCleanPIN(bdcData.postcode || bdcData.postalCode);
+            if (pin) {
+              resolve({ success: true, pincode: pin, locality: bdcData.locality || bdcData.city || '' });
               return;
             }
           }
 
-          // Fallback: OpenStreetMap Nominatim API
-          const nomUrl = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
-          const nomResp = await fetch(nomUrl);
+          // 2. OpenStreetMap Nominatim reverse geocode
+          const nomUrl = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`;
+          const nomResp = await fetch(nomUrl, { headers: { 'User-Agent': 'PYHARA-Eco-Marketplace/1.0' } });
           if (nomResp.ok) {
             const nomData = await nomResp.json();
-            const nomPin = nomData.address?.postcode;
-            if (nomPin && /^[1-9][0-9]{5}$/.test(nomPin.trim())) {
-              resolve({
-                success: true,
-                pincode: nomPin.trim(),
-                locality: nomData.address?.suburb || nomData.address?.city || '',
-              });
+            const pin = extractCleanPIN(nomData.address?.postcode);
+            if (pin) {
+              resolve({ success: true, pincode: pin, locality: nomData.address?.suburb || nomData.address?.city || '' });
               return;
             }
           }
 
-          resolve({
-            success: false,
-            error: 'Could not automatically extract a 6-digit Indian PIN code from your current location. Please enter your PIN manually.',
-          });
+          // If GPS coords did not yield a 6-digit PIN code, fallback to IP location
+          const fallbackRes = await tryIPLocationFallback();
+          resolve(fallbackRes);
         } catch (err) {
-          resolve({
-            success: false,
-            error: 'Reverse geocoding failed. Please enter your PIN code manually.',
-          });
+          console.warn('GPS Reverse geocoding network error, trying IP location fallback...', err);
+          const fallbackRes = await tryIPLocationFallback();
+          resolve(fallbackRes);
         }
       },
-      (error) => {
-        let msg = 'Unable to retrieve location.';
-        if (error.code === error.PERMISSION_DENIED) {
-          msg = 'Location permission was denied. Please enter your PIN code manually.';
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          msg = 'Location information is unavailable. Please enter your PIN code manually.';
-        } else if (error.code === error.TIMEOUT) {
-          msg = 'Location request timed out. Please enter your PIN code manually.';
-        }
-        resolve({ success: false, error: msg });
+      async (error) => {
+        console.warn('Browser Geolocation error/denied, trying IP location fallback...', error);
+        const fallbackRes = await tryIPLocationFallback();
+        resolve(fallbackRes);
       },
-      { timeout: 8000, enableHighAccuracy: true }
+      { timeout: 6000, enableHighAccuracy: false, maximumAge: 300000 }
     );
   });
 }
