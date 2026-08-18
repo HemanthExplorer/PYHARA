@@ -70,8 +70,15 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
                     detail=f"Insufficient stock for '{product.name}'. Requested: {item_in.quantity}, Available: {product.stock_quantity}.",
                 )
 
-            # Deduct stock safely
-            product.stock_quantity -= item_in.quantity
+            # Deduct stock safely and prevent negative inventory
+            new_stock = product.stock_quantity - item_in.quantity
+            if new_stock < 0:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Insufficient stock for '{product.name}'. Requested: {item_in.quantity}, Available: {product.stock_quantity}.",
+                )
+
+            product.stock_quantity = new_stock
             if product.stock_quantity == 0 and product.availability != "Coming Soon":
                 product.availability = "Out of Stock"
 
@@ -106,9 +113,12 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
 
 
 def get_order(db: Session, order_identifier: str) -> Optional[Order]:
+    if not order_identifier:
+        return None
+    clean_id = order_identifier.strip()
     return (
         db.query(Order)
-        .filter((Order.id == order_identifier) | (Order.order_number == order_identifier))
+        .filter((Order.id == clean_id) | (Order.order_number == clean_id))
         .first()
     )
 

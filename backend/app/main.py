@@ -53,6 +53,9 @@ app = FastAPI(
     version="0.5.0",
 )
 
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
+
 # Enable CORS for Vite local dev server (port 5173 / default localhost)
 app.add_middleware(
     CORSMiddleware,
@@ -61,6 +64,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"Unhandled Server Exception at {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "An internal server error occurred while processing your request. Please try again."},
+    )
 
 app.include_router(products_router)
 app.include_router(orders_router)
