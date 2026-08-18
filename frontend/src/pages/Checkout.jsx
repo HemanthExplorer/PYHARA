@@ -109,18 +109,7 @@ export default function Checkout() {
       return;
     }
 
-    // 3. Load Razorpay SDK Script safely
-    setStatusMessage('Loading payment gateway...');
-    const isScriptLoaded = await loadRazorpayScript();
-    if (!isScriptLoaded) {
-      setErrorMessage('Unable to load payment gateway SDK. Please try again or check network connection.');
-      showToast('Payment gateway script failed to load.');
-      setSubmitting(false);
-      setStatusMessage(null);
-      return;
-    }
-
-    // 4. Create Razorpay Payment Order via Backend
+    // 3. Create Razorpay Payment Order via Backend
     setStatusMessage('Initializing Razorpay Checkout...');
     let rzpData = null;
     try {
@@ -133,13 +122,63 @@ export default function Checkout() {
       return;
     }
 
-    // 5. Open REAL Razorpay Checkout Overlay
+    // 4. Check for Razorpay Test / Mock Mode (for dev environment or dummy keys)
+    const isMockPayment =
+      rzpData.is_mock ||
+      (rzpData.razorpay_order_id &&
+        (rzpData.razorpay_order_id.startsWith('order_mock_') ||
+          rzpData.razorpay_order_id.startsWith('order_test_')));
+
+    if (isMockPayment) {
+      setStatusMessage('Completing Razorpay Test Mode Payment...');
+      try {
+        const mockPaymentId = `pay_mock_${Date.now()}`;
+        const mockSignature = `sig_mock_${Date.now()}`;
+
+        const verifyResult = await verifyPayment(
+          createdOrder.id,
+          rzpData.razorpay_order_id,
+          mockPaymentId,
+          mockSignature
+        );
+
+        if (verifyResult && verifyResult.payment_status === 'Paid') {
+          clearCart();
+          showToast(`Payment successful! Order #${createdOrder.order_number} confirmed.`);
+          navigate(`/order/${createdOrder.id}`);
+        } else {
+          setErrorMessage('Payment verification failed. Please contact support.');
+          setSubmitting(false);
+          setStatusMessage(null);
+        }
+      } catch (verErr) {
+        console.error('Test payment verification failed:', verErr);
+        setErrorMessage(verErr.message || 'Payment verification failed.');
+        setSubmitting(false);
+        setStatusMessage(null);
+      }
+      return;
+    }
+
+    // 5. Load Razorpay SDK Script safely for real Razorpay credentials
+    setStatusMessage('Loading payment gateway...');
+    const isScriptLoaded = await loadRazorpayScript();
+    if (!isScriptLoaded) {
+      setErrorMessage('Unable to load payment gateway SDK. Please try again or check network connection.');
+      showToast('Payment gateway script failed to load.');
+      setSubmitting(false);
+      setStatusMessage(null);
+      return;
+    }
+
+    // 6. Open Official Razorpay Checkout Overlay for real credentials
     const options = {
       key: rzpData.key_id,
       amount: rzpData.amount,
       currency: rzpData.currency || 'INR',
       name: 'PYHARA',
       description: 'PYHARA Artisan Crafts Payment',
+      order_id: rzpData.razorpay_order_id,
       prefill: {
         name: formData.customer_name.trim(),
         email: formData.customer_email.trim(),
@@ -182,10 +221,6 @@ export default function Checkout() {
         },
       },
     };
-
-    if (rzpData.razorpay_order_id) {
-      options.order_id = rzpData.razorpay_order_id;
-    }
 
     try {
       const razorpayInstance = new window.Razorpay(options);

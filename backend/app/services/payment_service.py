@@ -91,7 +91,7 @@ def create_razorpay_order(db: Session, order_id: str) -> Dict[str, Any]:
             "amount": amount_paise,
             "currency": existing_payment.currency,
             "key_id": get_razorpay_key_id(),
-            "is_mock": existing_payment.razorpay_order_id.startswith("order_mock_"),
+            "is_mock": existing_payment.razorpay_order_id.startswith("order_mock_") or existing_payment.razorpay_order_id.startswith("order_test_"),
         }
 
     # 7. Create Razorpay order via API (or fallback for dev test mode)

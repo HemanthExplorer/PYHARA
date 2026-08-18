@@ -37,21 +37,50 @@ export default function OrderConfirmation() {
     setPaying(true);
     setPayError(null);
 
-    const isLoaded = await loadRazorpayScript();
-    if (!isLoaded) {
-      setPayError('Unable to load payment gateway script.');
-      setPaying(false);
-      return;
-    }
-
     try {
       const rzpData = await createPaymentOrder(order.id);
+
+      const isMockPayment =
+        rzpData.is_mock ||
+        (rzpData.razorpay_order_id &&
+          (rzpData.razorpay_order_id.startsWith('order_mock_') ||
+            rzpData.razorpay_order_id.startsWith('order_test_')));
+
+      if (isMockPayment) {
+        const mockPaymentId = `pay_mock_${Date.now()}`;
+        const mockSignature = `sig_mock_${Date.now()}`;
+
+        const verifyResult = await verifyPayment(
+          order.id,
+          rzpData.razorpay_order_id,
+          mockPaymentId,
+          mockSignature
+        );
+
+        if (verifyResult && verifyResult.payment_status === 'Paid') {
+          showToast('Payment verified successfully!');
+          await fetchOrderDetails();
+        } else {
+          setPayError('Payment verification failed.');
+        }
+        setPaying(false);
+        return;
+      }
+
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        setPayError('Unable to load payment gateway script.');
+        setPaying(false);
+        return;
+      }
+
       const options = {
         key: rzpData.key_id,
         amount: rzpData.amount,
         currency: rzpData.currency || 'INR',
         name: 'PYHARA',
         description: `Payment for Order #${order.order_number}`,
+        order_id: rzpData.razorpay_order_id,
         prefill: {
           name: order.customer_name,
           email: order.customer_email,
@@ -85,10 +114,6 @@ export default function OrderConfirmation() {
           },
         },
       };
-
-      if (rzpData.razorpay_order_id) {
-        options.order_id = rzpData.razorpay_order_id;
-      }
 
       const rzp = new window.Razorpay(options);
       rzp.open();
