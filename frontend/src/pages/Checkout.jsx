@@ -5,7 +5,7 @@ import { createOrder } from '../services/orderService';
 import { loadRazorpayScript, createPaymentOrder, verifyPayment } from '../services/paymentService';
 import { formatCurrency, formatTotalCurrency } from '../utils/formatCurrency';
 
-import { lookupPincode, checkServiceability, getCurrentLocationPIN } from '../services/locationService';
+import { checkServiceability, getCurrentLocationPIN } from '../services/locationService';
 import LocationSelectorModal from '../components/LocationSelectorModal';
 
 export default function Checkout() {
