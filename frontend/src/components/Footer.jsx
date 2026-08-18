@@ -1,7 +1,22 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 export default function Footer() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSectionLink = (sectionId, e) => {
+    e.preventDefault();
+    if (location.pathname === '/') {
+      const elem = document.getElementById(sectionId);
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      navigate('/#' + sectionId);
+    }
+  };
+
   return (
     <footer className="footer">
       <div className="container">
@@ -22,9 +37,9 @@ export default function Footer() {
             <h4 className="footer-heading">Navigation</h4>
             <ul className="footer-links">
               <li><Link to="/shop">Shop Collection</Link></li>
-              <li><a href="#story">Our Philosophy</a></li>
-              <li><a href="#artisans">Artisans &amp; Makers</a></li>
-              <li><a href="#sustainability">Impact Commitments</a></li>
+              <li><a href="#story" onClick={(e) => handleSectionLink('story', e)}>Our Philosophy</a></li>
+              <li><a href="#artisans" onClick={(e) => handleSectionLink('artisans', e)}>Artisans &amp; Makers</a></li>
+              <li><a href="#sustainability" onClick={(e) => handleSectionLink('sustainability', e)}>Impact Commitments</a></li>
             </ul>
           </div>
 
@@ -44,7 +59,7 @@ export default function Footer() {
             <h4 className="footer-heading">Platform</h4>
             <ul className="footer-links">
               <li><Link to="/shop">Explore Crafts</Link></li>
-              <li><a href="#story">About PYHARA</a></li>
+              <li><a href="#story" onClick={(e) => handleSectionLink('story', e)}>About PYHARA</a></li>
             </ul>
           </div>
         </div>

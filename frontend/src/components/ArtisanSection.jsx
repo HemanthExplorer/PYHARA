@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function ArtisanSection() {
   return (
@@ -28,9 +29,9 @@ export default function ArtisanSection() {
               We work to support traditional craft communities by providing a platform that respects their heritage, values their skill, and ensures cultural practices continue to thrive in the modern world.
             </p>
 
-            <a href="#collection" className="btn btn-outline-clay">
+            <Link to="/shop" className="btn btn-outline-clay">
               Discover Handcrafted Goods
-            </a>
+            </Link>
           </div>
         </div>
       </div>

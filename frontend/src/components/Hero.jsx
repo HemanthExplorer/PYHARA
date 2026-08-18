@@ -1,7 +1,22 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 export default function Hero() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSectionLink = (sectionId, e) => {
+    e.preventDefault();
+    if (location.pathname === '/') {
+      const elem = document.getElementById(sectionId);
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      navigate('/#' + sectionId);
+    }
+  };
+
   return (
     <section className="hero">
       <div className="container">
@@ -23,7 +38,7 @@ export default function Hero() {
               <Link to="/shop" className="btn btn-primary">
                 Explore the Collection
               </Link>
-              <a href="#story" className="btn btn-secondary">
+              <a href="#story" onClick={(e) => handleSectionLink('story', e)} className="btn btn-secondary">
                 Our Story
               </a>
             </div>
