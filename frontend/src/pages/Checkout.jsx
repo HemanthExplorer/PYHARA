@@ -456,7 +456,7 @@ export default function Checkout() {
                   Customer Information
                 </h3>
 
-                <div className="admin-form-grid">
+                <div className="checkout-form-grid">
                   <div className="form-group full-width">
                     <label htmlFor="customer_name" className="form-label">
                       Full Name <span className="req">*</span>

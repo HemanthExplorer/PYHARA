@@ -1481,14 +1481,14 @@ a {
   gap: 1.5rem;
 }
 
-.admin-form-grid {
+.checkout-form-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.25rem;
 }
 
 @media (min-width: 600px) {
-  .admin-form-grid {
+  .checkout-form-grid {
     grid-template-columns: 1fr 1fr;
   }
   .form-group.full-width {

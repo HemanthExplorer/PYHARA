@@ -39,11 +39,11 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 4: Internal / Platform */}
+          {/* Column 4: Platform */}
           <div>
             <h4 className="footer-heading">Platform</h4>
             <ul className="footer-links">
-              <li><Link to="/admin/products">Admin Management</Link></li>
+              <li><Link to="/shop">Explore Crafts</Link></li>
               <li><a href="#story">About PYHARA</a></li>
             </ul>
           </div>
