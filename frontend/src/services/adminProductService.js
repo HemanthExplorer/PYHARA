@@ -9,8 +9,7 @@
  */
 
 import { getStoredToken } from './authService';
-
-const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
+import { API_BASE_URL } from '../config';
 
 function getAuthHeaders() {
   const token = getStoredToken();
@@ -56,8 +55,7 @@ export function normalizeToBackend(p) {
 }
 
 export async function getAdminProducts() {
-  const host = getHost();
-  const url = `http://${host}:8000/api/products`;
+  const url = `${API_BASE_URL}/api/products`;
 
   const res = await fetch(url, {
     method: 'GET',
@@ -74,8 +72,7 @@ export async function getAdminProducts() {
 
 export async function createProduct(productData) {
   const payload = normalizeToBackend(productData);
-  const host = getHost();
-  const url = `http://${host}:8000/api/products`;
+  const url = `${API_BASE_URL}/api/products`;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -109,8 +106,7 @@ export async function createProduct(productData) {
 
 export async function updateProduct(id, productData) {
   const payload = normalizeToBackend(productData);
-  const host = getHost();
-  const url = `http://${host}:8000/api/products/${encodeURIComponent(id)}`;
+  const url = `${API_BASE_URL}/api/products/${encodeURIComponent(id)}`;
 
   const res = await fetch(url, {
     method: 'PUT',
@@ -143,8 +139,7 @@ export async function updateProduct(id, productData) {
 }
 
 export async function deleteProduct(id) {
-  const host = getHost();
-  const url = `http://${host}:8000/api/products/${encodeURIComponent(id)}`;
+  const url = `${API_BASE_URL}/api/products/${encodeURIComponent(id)}`;
 
   const res = await fetch(url, {
     method: 'DELETE',

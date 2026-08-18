@@ -9,8 +9,7 @@
  */
 
 import { DEMO_PRODUCTS, FUTURE_CATEGORIES } from '../data/products';
-
-const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
+import { API_BASE_URL } from '../config';
 
 /**
  * Normalizes backend product schema (`alt_text`) to match frontend prop naming (`altText`).
@@ -34,8 +33,7 @@ export function normalizeProduct(p) {
 }
 
 export async function getProducts() {
-  const host = getHost();
-  const url = `http://${host}:8000/api/products`;
+  const url = `${API_BASE_URL}/api/products`;
 
   try {
     const res = await fetch(url, {
@@ -62,8 +60,7 @@ export async function getProducts() {
 
 export async function getProductById(id) {
   if (!id) return null;
-  const host = getHost();
-  const url = `http://${host}:8000/api/products/${encodeURIComponent(id)}`;
+  const url = `${API_BASE_URL}/api/products/${encodeURIComponent(id)}`;
 
   try {
     const res = await fetch(url, {

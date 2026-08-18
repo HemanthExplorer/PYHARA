@@ -6,8 +6,8 @@
  * GET  /api/auth/me
  */
 
-const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
-const API_BASE_URL = `http://${getHost()}:8000/api/auth`;
+import { API_BASE_URL } from '../config';
+
 const TOKEN_KEY = 'pyhara_admin_token';
 
 export function getStoredToken() {
@@ -37,8 +37,7 @@ export function removeStoredToken() {
 }
 
 export async function login(username, password) {
-  const host = getHost();
-  const loginUrl = `http://${host}:8000/api/auth/login`;
+  const loginUrl = `${API_BASE_URL}/api/auth/login`;
 
   const res = await fetch(loginUrl, {
     method: 'POST',
@@ -77,8 +76,7 @@ export async function getCurrentUser(overrideToken = null) {
   const token = overrideToken || getStoredToken();
   if (!token) return null;
 
-  const host = getHost();
-  const meUrl = `http://${host}:8000/api/auth/me`;
+  const meUrl = `${API_BASE_URL}/api/auth/me`;
 
   const res = await fetch(meUrl, {
     method: 'GET',

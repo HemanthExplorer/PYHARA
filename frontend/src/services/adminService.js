@@ -6,8 +6,7 @@
  */
 
 import { getStoredToken } from './authService';
-
-const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
+import { API_BASE_URL } from '../config';
 
 function getAuthHeaders() {
   const token = getStoredToken();
@@ -19,8 +18,7 @@ function getAuthHeaders() {
 }
 
 export async function getDashboardStats() {
-  const host = getHost();
-  const url = `http://${host}:8000/api/admin/dashboard`;
+  const url = `${API_BASE_URL}/api/admin/dashboard`;
 
   const res = await fetch(url, {
     method: 'GET',

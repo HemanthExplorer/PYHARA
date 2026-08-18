@@ -2,7 +2,7 @@
  * PYHARA — Location & PIN Code Service Layer
  */
 
-const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
+import { API_BASE_URL } from '../config';
 
 export async function lookupPincode(pincode) {
   if (!pincode || pincode.trim().length !== 6) {
@@ -10,8 +10,7 @@ export async function lookupPincode(pincode) {
   }
 
   const cleanPin = pincode.trim();
-  const host = getHost();
-  const url = `http://${host}:8000/api/location/pincode/${encodeURIComponent(cleanPin)}`;
+  const url = `${API_BASE_URL}/api/location/pincode/${encodeURIComponent(cleanPin)}`;
 
   try {
     const res = await fetch(url, {
@@ -49,8 +48,7 @@ export async function checkServiceability(pincode) {
   }
 
   const cleanPin = pincode.trim();
-  const host = getHost();
-  const url = `http://${host}:8000/api/location/serviceability/${encodeURIComponent(cleanPin)}`;
+  const url = `${API_BASE_URL}/api/location/serviceability/${encodeURIComponent(cleanPin)}`;
 
   try {
     const res = await fetch(url, {
@@ -79,8 +77,7 @@ export async function checkServiceability(pincode) {
 }
 
 export async function fetchActiveLocations() {
-  const host = getHost();
-  const url = `http://${host}:8000/api/location/active`;
+  const url = `${API_BASE_URL}/api/location/active`;
 
   try {
     const res = await fetch(url, {

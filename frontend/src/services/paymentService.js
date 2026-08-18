@@ -7,7 +7,7 @@
  * GET  /api/payments/order/{order_id}
  */
 
-const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
+import { API_BASE_URL } from '../config';
 
 /**
  * Dynamically loads the official Razorpay Checkout SDK script safely.
@@ -39,8 +39,7 @@ export function loadRazorpayScript() {
 }
 
 export async function createPaymentOrder(orderId) {
-  const host = getHost();
-  const url = `http://${host}:8000/api/payments/create-order`;
+  const url = `${API_BASE_URL}/api/payments/create-order`;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -66,8 +65,7 @@ export async function createPaymentOrder(orderId) {
 }
 
 export async function verifyPayment(orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature) {
-  const host = getHost();
-  const url = `http://${host}:8000/api/payments/verify`;
+  const url = `${API_BASE_URL}/api/payments/verify`;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -99,8 +97,7 @@ export async function verifyPayment(orderId, razorpayOrderId, razorpayPaymentId,
 
 export async function getPaymentForOrder(orderId) {
   if (!orderId) return null;
-  const host = getHost();
-  const url = `http://${host}:8000/api/payments/order/${encodeURIComponent(orderId)}`;
+  const url = `${API_BASE_URL}/api/payments/order/${encodeURIComponent(orderId)}`;
 
   const res = await fetch(url, {
     method: 'GET',

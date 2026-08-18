@@ -10,8 +10,7 @@
  */
 
 import { getStoredToken } from './authService';
-
-const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
+import { API_BASE_URL } from '../config';
 
 function getAuthHeaders() {
   const token = getStoredToken();
@@ -23,8 +22,7 @@ function getAuthHeaders() {
 }
 
 export async function createOrder(orderPayload) {
-  const host = getHost();
-  const url = `http://${host}:8000/api/orders`;
+  const url = `${API_BASE_URL}/api/orders`;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -58,8 +56,7 @@ export async function createOrder(orderPayload) {
 
 export async function getOrderById(orderIdentifier) {
   if (!orderIdentifier) return null;
-  const host = getHost();
-  const url = `http://${host}:8000/api/orders/${encodeURIComponent(orderIdentifier)}`;
+  const url = `${API_BASE_URL}/api/orders/${encodeURIComponent(orderIdentifier)}`;
 
   const res = await fetch(url, {
     method: 'GET',
@@ -78,8 +75,7 @@ export async function getOrderById(orderIdentifier) {
 }
 
 export async function cancelCustomerOrder(orderId) {
-  const host = getHost();
-  const url = `http://${host}:8000/api/orders/${encodeURIComponent(orderId)}/cancel`;
+  const url = `${API_BASE_URL}/api/orders/${encodeURIComponent(orderId)}/cancel`;
 
   const res = await fetch(url, {
     method: 'PUT',
@@ -104,8 +100,7 @@ export async function cancelCustomerOrder(orderId) {
 }
 
 export async function getAdminOrders() {
-  const host = getHost();
-  const url = `http://${host}:8000/api/orders`;
+  const url = `${API_BASE_URL}/api/orders`;
 
   const res = await fetch(url, {
     method: 'GET',
@@ -121,8 +116,7 @@ export async function getAdminOrders() {
 }
 
 export async function updateOrderStatus(orderId, newStatus) {
-  const host = getHost();
-  const url = `http://${host}:8000/api/orders/${encodeURIComponent(orderId)}/status`;
+  const url = `${API_BASE_URL}/api/orders/${encodeURIComponent(orderId)}/status`;
 
   const res = await fetch(url, {
     method: 'PUT',

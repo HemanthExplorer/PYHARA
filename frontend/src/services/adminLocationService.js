@@ -2,7 +2,7 @@
  * PYHARA — Admin Location Management Service Layer
  */
 
-const getHost = () => (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1');
+import { API_BASE_URL } from '../config';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('pyhara_admin_token');
@@ -14,12 +14,11 @@ const getAuthHeaders = () => {
 };
 
 export async function fetchAdminLocations(search = '', activeOnly = false) {
-  const host = getHost();
   const queryParams = new URLSearchParams();
   if (search) queryParams.append('search', search);
   if (activeOnly) queryParams.append('active_only', 'true');
 
-  const url = `http://${host}:8000/api/admin/locations${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const url = `${API_BASE_URL}/api/admin/locations${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
   const res = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || 'Failed to fetch delivery locations');
@@ -27,8 +26,7 @@ export async function fetchAdminLocations(search = '', activeOnly = false) {
 }
 
 export async function createAdminLocation(locationData) {
-  const host = getHost();
-  const url = `http://${host}:8000/api/admin/locations`;
+  const url = `${API_BASE_URL}/api/admin/locations`;
   const res = await fetch(url, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -40,8 +38,7 @@ export async function createAdminLocation(locationData) {
 }
 
 export async function updateAdminLocation(locationId, updateData) {
-  const host = getHost();
-  const url = `http://${host}:8000/api/admin/locations/${encodeURIComponent(locationId)}`;
+  const url = `${API_BASE_URL}/api/admin/locations/${encodeURIComponent(locationId)}`;
   const res = await fetch(url, {
     method: 'PUT',
     headers: getAuthHeaders(),
@@ -53,8 +50,7 @@ export async function updateAdminLocation(locationId, updateData) {
 }
 
 export async function deleteAdminLocation(locationId) {
-  const host = getHost();
-  const url = `http://${host}:8000/api/admin/locations/${encodeURIComponent(locationId)}`;
+  const url = `${API_BASE_URL}/api/admin/locations/${encodeURIComponent(locationId)}`;
   const res = await fetch(url, { method: 'DELETE', headers: getAuthHeaders() });
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || 'Failed to delete delivery location');
