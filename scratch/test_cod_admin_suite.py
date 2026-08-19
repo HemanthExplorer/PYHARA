@@ -40,7 +40,7 @@ def run_cod_admin_suite():
 
     db = TestingSessionLocal()
     print("========================================================================")
-    print("      PYHARA ECO-MARKETPLACE — ADMIN & COD INTEGRATION SUITE           ")
+    print("      PYHARA ECO-MARKETPLACE — ADMIN & COD & PAYMENT FAILURE SUITE       ")
     print("========================================================================")
 
     try:
@@ -219,8 +219,48 @@ def run_cod_admin_suite():
             assert exc.status_code == 409
             print("[OK] Test 9: COD order creation respects unserviceable PIN and stock limit validations.")
 
+        # 10. Razorpay Initialization Failure Cleaning Up Order & Restoring Stock
+        db.refresh(p1)
+        stock_before_fail = p1.stock_quantity
+
+        fail_rzp_order_in = OrderCreate(
+            customer_name="Razorpay Failure Test",
+            customer_email="fail_rzp@example.com",
+            customer_phone="+919876543219",
+            shipping_address="#99 Indiranagar",
+            pincode="560001",
+            payment_method="RAZORPAY",
+            items=[OrderItemCreate(product_id="p-cod-1", quantity=2)]
+        )
+        fail_order = order_service.create_order(db, fail_rzp_order_in)
+        db.refresh(p1)
+        assert p1.stock_quantity == stock_before_fail - 2
+
+        try:
+            payment_service.create_razorpay_order(db, fail_order.id)
+            assert False, "Expected 400 for failed Razorpay initialization"
+        except HTTPException as exc:
+            assert exc.status_code == 400
+            assert "Unable to initialize online payment" in exc.detail
+
+        db.refresh(fail_order)
+        db.refresh(p1)
+        assert fail_order.payment_status == "Failed"
+        assert fail_order.status == "Cancelled"
+        assert p1.stock_quantity == stock_before_fail  # Stock restored!
+        print("[OK] Test 10: Razorpay initialization failure automatically set payment_status='Failed', status='Cancelled', and restored stock.")
+
+        # 11. Attempting to initialize or pay a cancelled failed order raises 409
+        try:
+            payment_service.create_razorpay_order(db, fail_order.id)
+            assert False, "Expected 409 when re-initializing cancelled order"
+        except HTTPException as exc:
+            assert exc.status_code == 409
+            assert "Cancelled orders cannot be paid" in exc.detail
+            print("[OK] Test 11: Cancelled failed orders cannot be re-initialized, preventing lingering pending states.")
+
         print("\n========================================================================")
-        print("   *** ALL ADMIN & COD INTEGRATION TESTS PASSED PERFECTLY! ***          ")
+        print("   *** ALL ADMIN, COD, & PAYMENT FAILURE TESTS PASSED PERFECTLY! ***    ")
         print("========================================================================")
 
     finally:
