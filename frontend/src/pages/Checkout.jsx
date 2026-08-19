@@ -198,12 +198,7 @@ export default function Checkout() {
       createdOrder = await createOrder(orderPayload);
     } catch (err) {
       console.error('Order creation failed:', err);
-      let userFriendlyMsg = 'Unable to create order. Please try again.';
-      if (err.status === 409) {
-        userFriendlyMsg = err.message || 'Some items are no longer available in the requested quantity.';
-      } else if (err.status === 422) {
-        userFriendlyMsg = err.message || 'Please check your input details.';
-      }
+      let userFriendlyMsg = err.message || 'Unable to create order. Please try again.';
       setErrorMessage(userFriendlyMsg);
       setSubmitting(false);
       setStatusMessage(null);
