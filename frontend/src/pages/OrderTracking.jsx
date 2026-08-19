@@ -242,7 +242,10 @@ export default function OrderTracking() {
               Order Information &amp; Payment
             </h3>
 
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span className="status-pill in">
+                Method: {order.payment_method === 'COD' ? 'Cash on Delivery' : 'Razorpay Online'}
+              </span>
               <span className={`status-pill ${isPaid ? 'in' : 'soon'}`}>
                 Payment: {order.payment_status || 'Pending'}
               </span>

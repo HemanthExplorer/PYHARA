@@ -23,6 +23,7 @@ export default function Checkout() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('RAZORPAY'); // RAZORPAY or COD
   const [statusMessage, setStatusMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
 
@@ -187,6 +188,7 @@ export default function Checkout() {
         pincode: cleanPin,
         city: formData.city.trim() || undefined,
         state: formData.state.trim() || undefined,
+        payment_method: paymentMethod,
         items: cartItems.map((item) => ({
           product_id: item.product.id,
           quantity: item.quantity,
@@ -208,7 +210,14 @@ export default function Checkout() {
       return;
     }
 
-    // 2. If null price, complete order creation without Razorpay payment modal
+    // 2. Handle Cash on Delivery (COD) or null price orders
+    if (paymentMethod === 'COD') {
+      clearCart();
+      showToast(`Order #${createdOrder.order_number} placed successfully with Cash on Delivery!`);
+      navigate(`/order/${createdOrder.id}`);
+      return;
+    }
+
     if (hasNullPrice || createdOrder.total_amount === null || createdOrder.total_amount === undefined) {
       clearCart();
       showToast(`Order #${createdOrder.order_number} created! Total will be confirmed.`);
@@ -627,6 +636,81 @@ export default function Checkout() {
                 </div>
               </div>
 
+              {/* Payment Method Selector */}
+              <div style={{ marginTop: '2rem', padding: '1.5rem', backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                <h3 className="font-serif" style={{ fontSize: '1.4rem', marginBottom: '1rem' }}>
+                  Select Payment Method <span className="req">*</span>
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                  <div
+                    onClick={() => setPaymentMethod('RAZORPAY')}
+                    style={{
+                      padding: '1rem 1.25rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: paymentMethod === 'RAZORPAY' ? '2px solid var(--color-clay)' : '1px solid var(--border-medium)',
+                      backgroundColor: paymentMethod === 'RAZORPAY' ? 'rgba(184, 90, 60, 0.06)' : 'var(--bg-warm)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.85rem',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      id="pay_razorpay"
+                      name="payment_method"
+                      value="RAZORPAY"
+                      checked={paymentMethod === 'RAZORPAY'}
+                      onChange={() => setPaymentMethod('RAZORPAY')}
+                      style={{ cursor: 'pointer', accentColor: 'var(--color-clay)' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                        Razorpay / Online Payment
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        UPI, Cards, NetBanking, Wallets
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setPaymentMethod('COD')}
+                    style={{
+                      padding: '1rem 1.25rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: paymentMethod === 'COD' ? '2px solid var(--color-clay)' : '1px solid var(--border-medium)',
+                      backgroundColor: paymentMethod === 'COD' ? 'rgba(184, 90, 60, 0.06)' : 'var(--bg-warm)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.85rem',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      id="pay_cod"
+                      name="payment_method"
+                      value="COD"
+                      checked={paymentMethod === 'COD'}
+                      onChange={() => setPaymentMethod('COD')}
+                      style={{ cursor: 'pointer', accentColor: 'var(--color-clay)' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                        Cash on Delivery (COD)
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        Pay cash when order is delivered
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div style={{ marginTop: '2rem' }}>
                 <button
                   type="submit"
@@ -641,7 +725,11 @@ export default function Checkout() {
                     cursor: submitting ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  {payButtonText}
+                  {submitting
+                    ? (statusMessage || 'Processing Order...')
+                    : paymentMethod === 'COD'
+                    ? `Place Order with Cash on Delivery (${formatTotalCurrency(subtotalAmount + (pinStatus && pinStatus.serviceable ? Number(pinStatus.delivery_charge || 0) : 0))})`
+                    : `Complete Payment (${formatTotalCurrency(subtotalAmount + (pinStatus && pinStatus.serviceable ? Number(pinStatus.delivery_charge || 0) : 0))})`}
                 </button>
               </div>
             </form>

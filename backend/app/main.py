@@ -39,6 +39,9 @@ with engine.connect() as conn:
         if "payment_status" not in column_names:
             conn.execute(text("ALTER TABLE orders ADD COLUMN payment_status VARCHAR DEFAULT 'Pending' NOT NULL"))
             conn.commit()
+        if "payment_method" not in column_names:
+            conn.execute(text("ALTER TABLE orders ADD COLUMN payment_method VARCHAR DEFAULT 'RAZORPAY' NOT NULL"))
+            conn.commit()
         if "pincode" not in column_names:
             conn.execute(text("ALTER TABLE orders ADD COLUMN pincode VARCHAR"))
             conn.commit()

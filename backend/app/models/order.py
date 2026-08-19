@@ -19,6 +19,7 @@ class Order(Base):
     state = Column(String, nullable=True)
     delivery_charge = Column(Numeric(10, 2), default=0.00, nullable=True)
     estimated_delivery_days = Column(Integer, default=3, nullable=True)
+    payment_method = Column(String, default="RAZORPAY", nullable=False)  # RAZORPAY, COD
     status = Column(String, default="Pending", nullable=False)
     payment_status = Column(String, default="Pending", nullable=False)  # Pending, Paid, Failed
     total_amount = Column(Numeric(12, 2), nullable=True)

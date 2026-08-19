@@ -219,7 +219,7 @@ export default function AdminProducts() {
           }}
         >
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <Link to="/admin" className="btn btn-secondary btn-sm">
+            <Link to="/admin/dashboard" className="btn btn-secondary btn-sm">
               Dashboard
             </Link>
             <Link to="/admin/products" className="btn btn-primary btn-sm">

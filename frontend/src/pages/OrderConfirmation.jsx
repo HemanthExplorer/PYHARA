@@ -208,6 +208,9 @@ export default function OrderConfirmation() {
           >
             <span>Date: <strong>{createdDateFormatted}</strong></span>
             <span>
+              Method: <strong>{order.payment_method === 'COD' ? 'Cash on Delivery' : 'Razorpay Online'}</strong>
+            </span>
+            <span>
               Payment:{' '}
               <strong className={`status-pill ${isPaid ? 'in' : 'soon'}`} style={{ marginLeft: '0.25rem' }}>
                 {order.payment_status || 'Pending'}
@@ -221,8 +224,15 @@ export default function OrderConfirmation() {
             </span>
           </div>
 
-          {/* Retry Payment Button if Pending */}
-          {!isPaid && order.status !== 'Cancelled' && order.total_amount !== null && (
+          {/* COD Cash Notice */}
+          {order.payment_method === 'COD' && !isPaid && (
+            <div style={{ marginTop: '1.25rem', backgroundColor: 'rgba(46, 67, 52, 0.08)', border: '1px solid var(--color-earth-green)', color: 'var(--color-earth-green)', padding: '0.85rem 1.25rem', borderRadius: 'var(--radius-md)', fontSize: '0.9rem', fontWeight: '500' }}>
+              💵 Cash on Delivery: Please keep {formatTotalCurrency(order.total_amount)} cash ready upon delivery. Payment will be collected when your items arrive.
+            </div>
+          )}
+
+          {/* Retry Payment Button for Razorpay Online Orders */}
+          {order.payment_method !== 'COD' && !isPaid && order.status !== 'Cancelled' && order.total_amount !== null && (
             <div style={{ marginTop: '1.5rem' }}>
               {payError && (
                 <div style={{ color: 'var(--color-clay)', fontSize: '0.85rem', marginBottom: '0.75rem', fontWeight: '500' }}>

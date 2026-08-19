@@ -33,9 +33,10 @@ export default function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/order/:id" element={<OrderConfirmation />} />
           <Route path="/orders/:id" element={<OrderTracking />} />
+          <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
-            path="/admin"
+            path="/admin/dashboard"
             element={
               <ProtectedAdminRoute>
                 <AdminDashboard />

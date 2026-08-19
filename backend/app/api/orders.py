@@ -65,3 +65,15 @@ def update_order_status(
     return order_service.update_order_status(
         db=db, order_id=order_id, new_status=status_update.status
     )
+
+
+@router.put("/{order_id}/mark-cod-paid", response_model=OrderResponse)
+def mark_cod_paid(
+    order_id: str,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    """
+    Admin protected: Marks a Cash on Delivery (COD) order as Paid upon cash collection.
+    """
+    return order_service.mark_cod_order_as_paid(db=db, order_id=order_id)

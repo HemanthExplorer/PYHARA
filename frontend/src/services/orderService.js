@@ -143,3 +143,29 @@ export async function updateOrderStatus(orderId, newStatus) {
 
   return await res.json();
 }
+
+export async function markCodPaid(orderId) {
+  const url = `${API_BASE_URL}/api/orders/${encodeURIComponent(orderId)}/mark-cod-paid`;
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    let errorDetail = `HTTP ${res.status}`;
+    try {
+      const errJson = await res.json();
+      if (errJson.detail) {
+        errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+      }
+    } catch {}
+
+    const err = new Error(errorDetail);
+    err.status = res.status;
+    throw err;
+  }
+
+  return await res.json();
+}
+

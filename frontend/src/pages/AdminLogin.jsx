@@ -13,7 +13,7 @@ export default function AdminLogin() {
 
   useEffect(() => {
     if (!authLoading && isAuthenticated && isAdmin) {
-      navigate('/admin/products', { replace: true });
+      navigate('/admin/dashboard', { replace: true });
     }
   }, [authLoading, isAuthenticated, isAdmin, navigate]);
 
@@ -30,7 +30,7 @@ export default function AdminLogin() {
     try {
       const user = await login(username.trim(), password.trim());
       if (user && user.is_admin) {
-        navigate('/admin/products', { replace: true });
+        navigate('/admin/dashboard', { replace: true });
       } else {
         setErrorMessage('Invalid username or password.');
       }

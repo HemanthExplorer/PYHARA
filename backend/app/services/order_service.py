@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.models.order import Order, OrderItem
 from app.models.product import Product
+from app.models.payment import Payment
 from app.schemas.order import OrderCreate
+from app.services.location_service import check_serviceability
 
 
 def generate_order_number(db: Session) -> str:
@@ -18,9 +20,6 @@ def generate_order_number(db: Session) -> str:
         seq += 1
         candidate = f"{prefix}{seq:04d}"
     return candidate
-
-
-from app.services.location_service import check_serviceability
 
 
 def create_order(db: Session, order_in: OrderCreate) -> Order:
@@ -47,6 +46,9 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
         state_val = order_in.state.strip() if order_in.state else svc_res.state
         delivery_charge_val = svc_res.delivery_charge
         est_days_val = svc_res.estimated_delivery_days
+        pm_val = (order_in.payment_method or "RAZORPAY").strip().upper()
+        if pm_val not in {"RAZORPAY", "COD"}:
+            pm_val = "RAZORPAY"
 
         order = Order(
             id=order_id,
@@ -60,7 +62,9 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
             state=state_val,
             delivery_charge=delivery_charge_val,
             estimated_delivery_days=est_days_val,
+            payment_method=pm_val,
             status="Pending",
+            payment_status="Pending",
             total_amount=None,
         )
         db.add(order)
@@ -133,7 +137,7 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
     except HTTPException:
         db.rollback()
         raise
-    except IntegrityError as exc:
+    except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -204,6 +208,52 @@ def update_order_status(db: Session, order_id: str, new_status: str) -> Order:
 
     order.status = new_status
     order.updated_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+def mark_cod_order_as_paid(db: Session, order_id: str) -> Order:
+    """
+    Admin protected: Marks a Cash on Delivery (COD) order as Paid upon cash collection.
+    Enforces that the order's payment_method is COD and idempotently updates payment and order status.
+    """
+    order = get_order(db, order_id)
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order '{order_id}' not found.",
+        )
+
+    if (order.payment_method or "").upper() != "COD":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only Cash on Delivery (COD) orders can be marked as Paid through this action.",
+        )
+
+    if order.payment_status == "Paid":
+        return order
+
+    order.payment_status = "Paid"
+    if order.status == "Pending":
+        order.status = "Confirmed"
+    order.updated_at = datetime.utcnow()
+
+    # Record or update payment record
+    existing_payment = db.query(Payment).filter(Payment.order_id == order.id).first()
+    if not existing_payment:
+        payment_rec = Payment(
+            id=str(uuid.uuid4()),
+            order_id=order.id,
+            razorpay_order_id=f"COD_{uuid.uuid4().hex[:12]}",
+            amount=order.total_amount or Decimal("0.00"),
+            currency="INR",
+            status="Paid",
+        )
+        db.add(payment_rec)
+    else:
+        existing_payment.status = "Paid"
 
     db.commit()
     db.refresh(order)

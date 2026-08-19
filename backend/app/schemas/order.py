@@ -22,6 +22,7 @@ class OrderCreate(BaseModel):
     pincode: Optional[str] = Field(default=None)
     city: Optional[str] = Field(default=None)
     state: Optional[str] = Field(default=None)
+    payment_method: Optional[str] = Field(default="RAZORPAY")
     items: List[OrderItemCreate] = Field(..., min_length=1)
 
     @field_validator("customer_name")
@@ -44,7 +45,6 @@ class OrderCreate(BaseModel):
     @classmethod
     def validate_phone_format(cls, v: str) -> str:
         clean_v = v.strip()
-        # Remove common spaces or hyphens for regex matching
         digits_only = re.sub(r"[\s\-]", "", clean_v)
         if not PHONE_REGEX.match(digits_only):
             raise ValueError(f"Invalid phone number format: '{v}'. Must be a valid 10-digit Indian phone number.")
@@ -58,6 +58,16 @@ class OrderCreate(BaseModel):
         clean_v = v.strip()
         if not PINCODE_REGEX.match(clean_v):
             raise ValueError(f"Invalid PIN code: '{v}'. Must be a valid 6-digit Indian postal code.")
+        return clean_v
+
+    @field_validator("payment_method")
+    @classmethod
+    def validate_payment_method(cls, v: Optional[str]) -> str:
+        if not v or not v.strip():
+            return "RAZORPAY"
+        clean_v = v.strip().upper()
+        if clean_v not in {"RAZORPAY", "COD"}:
+            raise ValueError("payment_method must be either 'RAZORPAY' or 'COD'")
         return clean_v
 
     @field_validator("items")
@@ -95,6 +105,7 @@ class OrderResponse(BaseModel):
     state: Optional[str] = None
     delivery_charge: Optional[Decimal] = Decimal("0.00")
     estimated_delivery_days: Optional[int] = 3
+    payment_method: Optional[str] = "RAZORPAY"
     status: str
     payment_status: str = "Pending"
     total_amount: Optional[Decimal] = None

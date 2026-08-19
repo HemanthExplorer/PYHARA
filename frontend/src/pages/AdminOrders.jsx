@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getAdminOrders, updateOrderStatus } from '../services/orderService';
+import { getAdminOrders, updateOrderStatus, markCodPaid } from '../services/orderService';
 import { getPaymentForOrder } from '../services/paymentService';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,7 @@ export default function AdminOrders() {
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [markingPaid, setMarkingPaid] = useState(false);
   const [statusError, setStatusError] = useState(null);
 
   const fetchOrders = useCallback(async () => {
@@ -43,14 +44,14 @@ export default function AdminOrders() {
   // Handle Escape key to close modal
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && selectedOrder && !updatingStatus) {
+      if (e.key === 'Escape' && selectedOrder && !updatingStatus && !markingPaid) {
         setSelectedOrder(null);
         setPaymentDetails(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedOrder, updatingStatus]);
+  }, [selectedOrder, updatingStatus, markingPaid]);
 
   const handleOpenDetail = async (ord) => {
     setSelectedOrder(ord);
@@ -58,14 +59,16 @@ export default function AdminOrders() {
     setStatusError(null);
     setPaymentDetails(null);
 
-    setLoadingPayment(true);
-    try {
-      const pmt = await getPaymentForOrder(ord.id);
-      setPaymentDetails(pmt);
-    } catch (err) {
-      console.warn('No payment record retrieved:', err);
-    } finally {
-      setLoadingPayment(false);
+    if (ord.payment_method !== 'COD') {
+      setLoadingPayment(true);
+      try {
+        const pmt = await getPaymentForOrder(ord.id);
+        setPaymentDetails(pmt);
+      } catch (err) {
+        console.warn('No payment record retrieved:', err);
+      } finally {
+        setLoadingPayment(false);
+      }
     }
   };
 
@@ -92,6 +95,22 @@ export default function AdminOrders() {
       setStatusError(err.message || 'Invalid status transition.');
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const handleMarkCodPaid = async () => {
+    if (!selectedOrder) return;
+    setMarkingPaid(true);
+    try {
+      const updated = await markCodPaid(selectedOrder.id);
+      showToast(`Order #${updated.order_number} marked as Paid (COD)!`);
+      setSelectedOrder(updated);
+      await fetchOrders();
+    } catch (err) {
+      console.error('Failed to mark COD paid:', err);
+      showToast(err.message || 'Failed to mark COD paid.', 'error');
+    } finally {
+      setMarkingPaid(false);
     }
   };
 
@@ -151,7 +170,7 @@ export default function AdminOrders() {
             <span className="section-tag">Internal Management</span>
             <h1 className="admin-title font-serif">Customer Orders &amp; Payments</h1>
             <p className="admin-subtitle">
-              View customer purchases, track Razorpay payment status, and manage order fulfillment states.
+              View customer purchases, track payment status, and manage order fulfillment states.
             </p>
           </div>
 
@@ -200,6 +219,7 @@ export default function AdminOrders() {
                       <th>Customer</th>
                       <th>Date</th>
                       <th>Total Amount</th>
+                      <th>Method</th>
                       <th>Payment Status</th>
                       <th>Fulfillment Status</th>
                       <th style={{ textAlign: 'right' }}>Actions</th>
@@ -224,6 +244,8 @@ export default function AdminOrders() {
                         ? 'admin-tag-out'
                         : 'admin-tag-soon';
 
+                      const methodLabel = ord.payment_method === 'COD' ? 'Cash on Delivery (COD)' : 'Razorpay / Online';
+
                       return (
                         <tr key={ord.id}>
                           <td>
@@ -240,6 +262,11 @@ export default function AdminOrders() {
                             {new Date(ord.created_at).toLocaleDateString()}
                           </td>
                           <td className="admin-price-cell">{totalLabel}</td>
+                          <td>
+                            <span className="admin-tag-cat" style={{ backgroundColor: 'rgba(46,67,52,0.08)', color: 'var(--text-main)', border: '1px solid var(--border-subtle)' }}>
+                              {methodLabel}
+                            </span>
+                          </td>
                           <td>
                             <span className={pmtClass}>{pmtStatus}</span>
                           </td>
@@ -267,7 +294,7 @@ export default function AdminOrders() {
 
       {/* Order Detail & Payment Modal */}
       {selectedOrder && (
-        <div className="modal-backdrop" onClick={() => !updatingStatus && setSelectedOrder(null)}>
+        <div className="modal-backdrop" onClick={() => !updatingStatus && !markingPaid && setSelectedOrder(null)}>
           <div
             className="admin-modal-container"
             onClick={(e) => e.stopPropagation()}
@@ -278,9 +305,9 @@ export default function AdminOrders() {
           >
             <button
               className="modal-close-btn"
-              onClick={() => !updatingStatus && setSelectedOrder(null)}
+              onClick={() => !updatingStatus && !markingPaid && setSelectedOrder(null)}
               aria-label="Close modal"
-              disabled={updatingStatus}
+              disabled={updatingStatus || markingPaid}
             >
               &times;
             </button>
@@ -310,7 +337,7 @@ export default function AdminOrders() {
                       className="form-input"
                       value={newStatus}
                       onChange={(e) => setNewStatus(e.target.value)}
-                      disabled={updatingStatus}
+                      disabled={updatingStatus || markingPaid}
                       style={{ flex: 1 }}
                     >
                       <option value="Pending">Pending</option>
@@ -320,7 +347,7 @@ export default function AdminOrders() {
                       <option value="Cancelled">Cancelled (Restores stock if Pending/Confirmed)</option>
                     </select>
 
-                    <button type="submit" className="btn btn-primary btn-sm" disabled={updatingStatus}>
+                    <button type="submit" className="btn btn-primary btn-sm" disabled={updatingStatus || markingPaid}>
                       {updatingStatus ? 'Updating...' : 'Update Status'}
                     </button>
                   </div>
@@ -333,7 +360,7 @@ export default function AdminOrders() {
                 </div>
               </form>
 
-              {/* Razorpay Payment Information Box */}
+              {/* Payment Information Box */}
               <div
                 style={{
                   backgroundColor: 'var(--bg-surface)',
@@ -343,38 +370,78 @@ export default function AdminOrders() {
                   marginBottom: '1.5rem',
                 }}
               >
-                <h4 className="font-serif" style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>
-                  Razorpay Payment Information
-                </h4>
-                {loadingPayment ? (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Loading payment transaction details...</p>
-                ) : paymentDetails ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h4 className="font-serif" style={{ fontSize: '1.25rem', margin: 0 }}>
+                    Payment Information ({selectedOrder.payment_method === 'COD' ? 'Cash on Delivery' : 'Razorpay Online'})
+                  </h4>
+                  {selectedOrder.payment_method === 'COD' && selectedOrder.payment_status !== 'Paid' && (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={handleMarkCodPaid}
+                      disabled={markingPaid || updatingStatus}
+                      style={{ padding: '0.4rem 0.9rem', fontSize: '0.825rem' }}
+                    >
+                      {markingPaid ? 'Marking Paid...' : '✓ Mark COD as Paid'}
+                    </button>
+                  )}
+                </div>
+
+                {selectedOrder.payment_method === 'COD' ? (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.9rem' }}>
                     <div>
+                      <span className="spec-label">Payment Method:</span> <strong>Cash on Delivery (COD)</strong>
+                    </div>
+                    <div>
                       <span className="spec-label">Payment Status:</span>{' '}
-                      <strong style={{ color: paymentDetails.status === 'Paid' ? 'var(--color-earth-green)' : 'var(--color-clay)' }}>
-                        {paymentDetails.status}
+                      <strong style={{ color: selectedOrder.payment_status === 'Paid' ? 'var(--color-earth-green)' : 'var(--color-clay)' }}>
+                        {selectedOrder.payment_status || 'Pending'}
                       </strong>
                     </div>
                     <div>
-                      <span className="spec-label">Amount:</span>{' '}
-                      <strong>{formatCurrency(paymentDetails.amount)} ({paymentDetails.currency})</strong>
+                      <span className="spec-label">Order Total:</span>{' '}
+                      <strong>{formatTotalCurrency(selectedOrder.total_amount)}</strong>
                     </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <span className="spec-label">Razorpay Order ID:</span>{' '}
-                      <code style={{ fontSize: '0.85rem' }}>{paymentDetails.razorpay_order_id}</code>
+                    <div>
+                      <span className="spec-label">Cash Collection:</span>{' '}
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        {selectedOrder.payment_status === 'Paid' ? 'Collected by Courier / Agent' : 'Pending Upon Delivery'}
+                      </span>
                     </div>
-                    {paymentDetails.razorpay_payment_id && (
-                      <div style={{ gridColumn: '1 / -1' }}>
-                        <span className="spec-label">Razorpay Payment ID:</span>{' '}
-                        <code style={{ fontSize: '0.85rem' }}>{paymentDetails.razorpay_payment_id}</code>
-                      </div>
-                    )}
                   </div>
                 ) : (
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    Payment Status: <strong>{selectedOrder.payment_status || 'Pending'}</strong> (No active Razorpay payment transaction linked).
-                  </div>
+                  <>
+                    {loadingPayment ? (
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Loading payment transaction details...</p>
+                    ) : paymentDetails ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.9rem' }}>
+                        <div>
+                          <span className="spec-label">Payment Status:</span>{' '}
+                          <strong style={{ color: paymentDetails.status === 'Paid' ? 'var(--color-earth-green)' : 'var(--color-clay)' }}>
+                            {paymentDetails.status}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="spec-label">Amount:</span>{' '}
+                          <strong>{formatCurrency(paymentDetails.amount)} ({paymentDetails.currency})</strong>
+                        </div>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                          <span className="spec-label">Razorpay Order ID:</span>{' '}
+                          <code style={{ fontSize: '0.85rem' }}>{paymentDetails.razorpay_order_id}</code>
+                        </div>
+                        {paymentDetails.razorpay_payment_id && (
+                          <div style={{ gridColumn: '1 / -1' }}>
+                            <span className="spec-label">Razorpay Payment ID:</span>{' '}
+                            <code style={{ fontSize: '0.85rem' }}>{paymentDetails.razorpay_payment_id}</code>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        Payment Status: <strong>{selectedOrder.payment_status || 'Pending'}</strong> (No active Razorpay payment transaction linked).
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
