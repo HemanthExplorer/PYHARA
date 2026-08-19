@@ -2162,3 +2162,118 @@ a {
 .toast-close:hover {
   color: var(--text-inverse);
 }
+
+/* ==========================================================================
+   Mobile Devices & Touch Screen Optimizations (Anti-Overlap & Responsive Grid)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Header & Logo Spacing */
+  .logo-title {
+    font-size: 1.5rem !important;
+  }
+  .logo-tagline {
+    font-size: 0.58rem !important;
+    letter-spacing: 0.1em !important;
+  }
+  .header-inner {
+    height: 70px !important;
+  }
+  .mobile-drawer {
+    top: 70px !important;
+  }
+
+  /* Prevent Headings from line-clipping or overlapping on mobile viewports */
+  .hero-title {
+    font-size: 2.25rem !important;
+    line-height: 1.25 !important;
+    word-wrap: break-word;
+  }
+  .hero-tagline-sub {
+    font-size: 1.35rem !important;
+    line-height: 1.3 !important;
+  }
+  .section-title, .shop-title, .admin-title, .closing-title {
+    font-size: 2rem !important;
+    line-height: 1.25 !important;
+    word-wrap: break-word;
+  }
+  .details-title, .detail-title {
+    font-size: 1.85rem !important;
+    line-height: 1.25 !important;
+    word-wrap: break-word;
+  }
+
+  /* Buttons & CTAs Text Wrapping */
+  .btn {
+    padding: 0.75rem 1.25rem !important;
+    font-size: 0.875rem !important;
+    word-break: break-word;
+  }
+
+  /* Status Pills & Badges Line Height & Wrap Padding */
+  .status-pill, .admin-tag-out, .admin-tag-soon, .admin-tag-cat, .admin-tag-avail {
+    line-height: 1.4 !important;
+    margin: 2px !important;
+    display: inline-block !important;
+    word-break: break-word;
+  }
+
+  /* Full Width Cart Drawer on Mobile */
+  .cart-drawer-container {
+    max-width: 100% !important;
+  }
+
+  /* Responsive Modals on Mobile Devices */
+  .admin-modal-container, .product-detail-modal, .search-modal-container {
+    padding: 1.25rem !important;
+    margin: 0.75rem !important;
+    max-height: 94vh !important;
+    border-radius: var(--radius-md) !important;
+  }
+  .admin-modal-header {
+    padding: 1.25rem 1.25rem 1rem 1.25rem !important;
+  }
+  .admin-form-body {
+    padding: 1.25rem !important;
+  }
+
+  /* Toast Notification Padding & Mobile Positioning */
+  .toast-notification {
+    left: 1rem !important;
+    right: 1rem !important;
+    bottom: 1rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 1rem !important;
+  }
+  .logo-title {
+    font-size: 1.35rem !important;
+  }
+  .logo-tagline {
+    display: none !important; /* Hide small subtitle on ultra-narrow screens to prevent header action overlap */
+  }
+  .hero-title {
+    font-size: 1.9rem !important;
+    line-height: 1.25 !important;
+  }
+  .section-title, .shop-title, .admin-title, .closing-title {
+    font-size: 1.65rem !important;
+  }
+  .product-name {
+    font-size: 1.15rem !important;
+    line-height: 1.3 !important;
+  }
+  .category-pills-row {
+    gap: 0.5rem !important;
+  }
+  .category-pill {
+    padding: 0.4rem 0.85rem !important;
+    font-size: 0.8rem !important;
+  }
+}
+

@@ -196,14 +196,15 @@ export default function OrderConfirmation() {
           <div
             style={{
               display: 'inline-flex',
-              gap: '1.5rem',
+              gap: '0.85rem 1.5rem',
               alignItems: 'center',
               backgroundColor: 'var(--bg-elevated)',
-              padding: '0.6rem 1.25rem',
-              borderRadius: 'var(--radius-full)',
+              padding: '0.85rem 1.25rem',
+              borderRadius: 'var(--radius-md)',
               fontSize: '0.875rem',
               flexWrap: 'wrap',
               justifyContent: 'center',
+              lineHeight: '1.6',
             }}
           >
             <span>Date: <strong>{createdDateFormatted}</strong></span>
