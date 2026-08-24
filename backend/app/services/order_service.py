@@ -23,8 +23,15 @@ def generate_order_number(db: Session) -> str:
 
 
 def create_order(db: Session, order_in: OrderCreate, user_id: Optional[str] = None) -> Order:
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Customer authentication is required to place an order. Please log in or register.",
+        )
+
     try:
         order_num = generate_order_number(db)
+
         order_id = str(uuid.uuid4())
 
         # Enforce PIN code & Location Serviceability against Database

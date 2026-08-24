@@ -16,21 +16,14 @@ router = APIRouter(prefix="/api/orders", tags=["Orders"])
 def create_order(
     order_in: OrderCreate,
     db: Session = Depends(get_db),
-    token: Optional[str] = Depends(oauth2_scheme),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Customer checkout: Creates a new order. Associates user_id if token is supplied.
+    Authenticated customer checkout: Creates a new order linked to the verified JWT customer identity.
     Transactionally validates product availability and stock, snapshots item prices/names, and deducts inventory.
     """
-    user_id = None
-    if token:
-        payload = decode_access_token(token)
-        if payload and payload.get("sub"):
-            user = auth_service.get_user_by_username(db, username=payload.get("sub"))
-            if user:
-                user_id = user.id
+    return order_service.create_order(db=db, order_in=order_in, user_id=current_user.id)
 
-    return order_service.create_order(db=db, order_in=order_in, user_id=user_id)
 
 
 @router.get("/my-orders", response_model=List[OrderResponse])

@@ -67,10 +67,11 @@ def create_review(
         .filter(
             OrderItem.product_id == product_id,
             Order.user_id == user_id,
-            Order.status.in_(["Confirmed", "Shipped", "Delivered"]),
+            Order.status.in_(["Pending", "Confirmed", "Shipped", "Delivered"]),
         )
         .first()
     ) is not None
+
 
     review = Review(
         id=str(uuid.uuid4()),

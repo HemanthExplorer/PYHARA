@@ -13,10 +13,11 @@ import LocationSelectorModal from '../components/LocationSelectorModal';
 export default function Checkout() {
   const navigate = useNavigate();
   const { cartItems, clearCart, showToast } = useCart();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, openAuthModal } = useAuth();
 
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddrId, setSelectedAddrId] = useState('');
+
 
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -182,10 +183,17 @@ export default function Checkout() {
     setErrorMessage(null);
     setStatusMessage(null);
 
+    if (!isAuthenticated) {
+      setErrorMessage('Account authentication is required to place an order. Please log in or create a customer account.');
+      openAuthModal('login');
+      return;
+    }
+
     if (cartItems.length === 0) {
       setErrorMessage('Your cart is currently empty.');
       return;
     }
+
 
     if (!formData.customer_name.trim() || formData.customer_name.trim().length < 2) {
       setErrorMessage('Customer name must be at least 2 characters.');
@@ -440,7 +448,54 @@ export default function Checkout() {
           </p>
         </div>
 
+        {/* Guest Authentication Required Banner */}
+        {!isAuthenticated && (
+          <div
+            className="checkout-auth-banner"
+            style={{
+              backgroundColor: 'var(--bg-warm)',
+              border: '1.5px solid var(--color-clay)',
+              padding: '1.25rem 1.5rem',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '2rem',
+              display: 'flex',
+              justify: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1rem',
+            }}
+          >
+            <div>
+              <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-heading)', fontWeight: '700' }}>
+                🔑 Account Required to Place Order
+              </h4>
+              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                Please log in or create a free PYHARA account to place your order. Your cart items will be preserved!
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => openAuthModal('login')}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => openAuthModal('register')}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+              >
+                Create Account
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Status Notice */}
+
         {statusMessage && (
           <div
             style={{
