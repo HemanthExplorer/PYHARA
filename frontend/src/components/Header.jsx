@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { openSearch, openCart, totalCount } = useCart();
+  const { user, isAuthenticated, isAdmin, openAuthModal } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -26,6 +28,15 @@ export default function Header() {
       }
     } else {
       navigate('/#' + sectionId);
+    }
+  };
+
+  const handleAccountClick = () => {
+    closeMobileMenu();
+    if (isAuthenticated) {
+      navigate('/account');
+    } else {
+      openAuthModal('login');
     }
   };
 
@@ -56,6 +67,15 @@ export default function Header() {
               </svg>
             </button>
 
+            {/* Account Action */}
+            <button className="icon-btn" onClick={handleAccountClick} aria-label="My Account" title={isAuthenticated ? `Account (${user?.full_name || user?.username})` : 'Log In'}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </button>
+
+            {/* Cart Action */}
             <button className="icon-btn" onClick={openCart} aria-label={`Shopping Cart with ${totalCount} items`} title="Cart">
               <div className="cart-icon-wrapper">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -66,6 +86,13 @@ export default function Header() {
                 {totalCount > 0 && <span className="cart-badge">{totalCount}</span>}
               </div>
             </button>
+
+            {/* Admin Link if Admin */}
+            {isAdmin && (
+              <Link to="/admin/dashboard" className="btn-outline btn-xs-admin" title="Admin Portal">
+                Admin
+              </Link>
+            )}
 
             {/* Mobile Hamburger Button */}
             <button
@@ -95,9 +122,17 @@ export default function Header() {
       <div className={`mobile-drawer ${mobileMenuOpen ? 'open' : ''}`}>
         <nav className="mobile-nav-links">
           <Link to="/shop" className="mobile-nav-link" onClick={closeMobileMenu}>Shop</Link>
+          {isAuthenticated ? (
+            <Link to="/account" className="mobile-nav-link" onClick={closeMobileMenu}>My Account ({user?.username})</Link>
+          ) : (
+            <button className="mobile-nav-link text-left" onClick={() => { closeMobileMenu(); openAuthModal('login'); }}>Log In / Register</button>
+          )}
           <a href="#story" className="mobile-nav-link" onClick={(e) => handleSectionLink('story', e)}>Our Story</a>
           <a href="#artisans" className="mobile-nav-link" onClick={(e) => handleSectionLink('artisans', e)}>Craft &amp; Makers</a>
           <a href="#sustainability" className="mobile-nav-link" onClick={(e) => handleSectionLink('sustainability', e)}>Sustainability</a>
+          {isAdmin && (
+            <Link to="/admin/dashboard" className="mobile-nav-link text-accent" onClick={closeMobileMenu}>Admin Portal</Link>
+          )}
         </nav>
         <div className="mobile-drawer-footer">
           <p>PYHARA — Honor Tradition. Protect Nature.</p>

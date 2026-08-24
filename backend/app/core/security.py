@@ -7,9 +7,20 @@ import bcrypt
 
 def get_jwt_secret_key() -> str:
     secret = os.getenv("JWT_SECRET_KEY")
-    if not secret:
-        raise RuntimeError("JWT_SECRET_KEY environment variable is missing or empty.")
-    return secret
+    env_mode = os.getenv("ENVIRONMENT", os.getenv("ENV", "")).lower()
+    is_cloud_prod = bool(os.getenv("RENDER") or env_mode == "production" or env_mode == "prod")
+
+    if secret and secret.strip():
+        return secret.strip()
+
+    if is_cloud_prod:
+        raise RuntimeError(
+            "CRITICAL SECURITY CONFIGURATION ERROR: JWT_SECRET_KEY environment variable is missing or empty in production. "
+            "Please configure a strong random secret key."
+        )
+
+    return "pyhara_dev_secret_key_change_in_production_2026"
+
 
 
 def get_jwt_algorithm() -> str:

@@ -9,7 +9,9 @@ class Order(Base):
     __tablename__ = "orders"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=True, index=True)
     order_number = Column(String, unique=True, index=True, nullable=False)
+
     customer_name = Column(String, nullable=False)
     customer_email = Column(String, nullable=False)
     customer_phone = Column(String, nullable=False)

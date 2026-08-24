@@ -18,7 +18,11 @@ from app.api.payments import router as payments_router
 from app.api.admin import router as admin_router
 from app.api.location import router as location_router
 from app.api.admin_locations import router as admin_locations_router
+from app.api.addresses import router as addresses_router
+from app.api.wishlist import router as wishlist_router
+from app.api.reviews import router as reviews_router
 from app.db.database import engine, Base, SessionLocal
+
 
 # Import models so Base metadata is aware of all tables before create_all
 from app.models.product import Product
@@ -28,46 +32,21 @@ from app.models.payment import Payment
 from app.models.delivery_location import DeliveryLocation
 from app.services.auth_service import init_default_admin
 from app.services.location_service import seed_default_locations
+from app.services.product_service import seed_default_products
 
-# Create missing database tables safely
+# Ensure tables exist safely (Alembic / app.db.migrate handles explicit column migrations)
 Base.metadata.create_all(bind=engine)
 
-# Safely add payment_status, pincode, city, state, delivery_charge, estimated_delivery_days columns to existing SQLite orders table if missing
-with engine.connect() as conn:
-    try:
-        result = conn.execute(text("PRAGMA table_info(orders)")).fetchall()
-        column_names = [row[1] for row in result]
-        if "payment_status" not in column_names:
-            conn.execute(text("ALTER TABLE orders ADD COLUMN payment_status VARCHAR DEFAULT 'Pending' NOT NULL"))
-            conn.commit()
-        if "payment_method" not in column_names:
-            conn.execute(text("ALTER TABLE orders ADD COLUMN payment_method VARCHAR DEFAULT 'RAZORPAY' NOT NULL"))
-            conn.commit()
-        if "pincode" not in column_names:
-            conn.execute(text("ALTER TABLE orders ADD COLUMN pincode VARCHAR"))
-            conn.commit()
-        if "city" not in column_names:
-            conn.execute(text("ALTER TABLE orders ADD COLUMN city VARCHAR"))
-            conn.commit()
-        if "state" not in column_names:
-            conn.execute(text("ALTER TABLE orders ADD COLUMN state VARCHAR"))
-            conn.commit()
-        if "delivery_charge" not in column_names:
-            conn.execute(text("ALTER TABLE orders ADD COLUMN delivery_charge NUMERIC(10,2) DEFAULT 0.00"))
-            conn.commit()
-        if "estimated_delivery_days" not in column_names:
-            conn.execute(text("ALTER TABLE orders ADD COLUMN estimated_delivery_days INTEGER DEFAULT 3"))
-            conn.commit()
-    except Exception as e:
-        print(f"Notice during migration check: {e}")
-
-# Initialize default admin & default delivery locations on application startup
+# Initialize default admin, default delivery locations, and initial product catalog on startup if missing
 db = SessionLocal()
 try:
     init_default_admin(db)
     seed_default_locations(db)
+    seed_default_products(db)
 finally:
     db.close()
+
+
 
 app = FastAPI(
     title="PYHARA Eco-Marketplace API",
@@ -78,14 +57,21 @@ app = FastAPI(
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
-# Enable CORS for Vite local dev server (port 5173 / default localhost)
+# Enable CORS middleware (supports ALLOWED_ORIGINS env variable in production)
+allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "*").strip()
+if allowed_origins_raw and allowed_origins_raw != "*":
+    origins = [o.strip() for o in allowed_origins_raw.split(",") if o.strip()]
+else:
+    origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -108,6 +94,10 @@ app.include_router(payments_router)
 app.include_router(admin_router)
 app.include_router(location_router)
 app.include_router(admin_locations_router)
+app.include_router(addresses_router)
+app.include_router(wishlist_router)
+app.include_router(reviews_router)
+
 
 
 @app.get("/")

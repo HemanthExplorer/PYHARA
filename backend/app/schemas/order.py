@@ -95,7 +95,9 @@ class OrderItemResponse(BaseModel):
 
 class OrderResponse(BaseModel):
     id: str
+    user_id: Optional[str] = None
     order_number: str
+
     customer_name: str
     customer_email: str
     customer_phone: str

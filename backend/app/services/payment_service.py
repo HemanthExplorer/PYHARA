@@ -242,9 +242,18 @@ def verify_payment_signature(
         }
 
     # 4. HMAC SHA256 Signature Verification
+    key_id = get_razorpay_key_id()
     key_secret = get_razorpay_key_secret()
+    allow_mock_env = os.getenv("ALLOW_MOCK_PAYMENTS", "false").lower() in ("true", "1")
 
-    if razorpay_order_id.startswith("order_mock_") or razorpay_signature.startswith("sig_mock_") or razorpay_payment_id.startswith("pay_mock_"):
+    is_synthetic_key = key_id.startswith("rzp_test_") or key_id.startswith("mock_") or allow_mock_env
+    is_mock_payload = (
+        razorpay_order_id.startswith("order_mock_")
+        or razorpay_signature.startswith("sig_mock_")
+        or razorpay_payment_id.startswith("pay_mock_")
+    )
+
+    if is_synthetic_key and is_mock_payload:
         is_valid = True
     else:
         msg = f"{razorpay_order_id}|{razorpay_payment_id}".encode("utf-8")
@@ -252,6 +261,7 @@ def verify_payment_signature(
             key_secret.encode("utf-8"), msg, hashlib.sha256
         ).hexdigest()
         is_valid = hmac.compare_digest(generated_signature, razorpay_signature)
+
 
     if not is_valid:
         # Mark payment as failed if record exists

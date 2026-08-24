@@ -1,10 +1,3 @@
-/**
- * PYHARA — Admin Dashboard Service Layer
- * 
- * Interacts with FastAPI Admin REST API:
- * GET /api/admin/dashboard
- */
-
 import { getStoredToken } from './authService';
 import { API_BASE_URL } from '../config';
 
@@ -38,5 +31,32 @@ export async function getDashboardStats() {
     throw err;
   }
 
+  return await res.json();
+}
+
+export async function getAdminCustomers() {
+  const res = await fetch(`${API_BASE_URL}/api/admin/customers`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch customers list');
+  return await res.json();
+}
+
+export async function getAdminReviews() {
+  const res = await fetch(`${API_BASE_URL}/api/admin/reviews`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch reviews list');
+  return await res.json();
+}
+
+export async function deleteAdminReview(reviewId) {
+  const res = await fetch(`${API_BASE_URL}/api/admin/reviews/${encodeURIComponent(reviewId)}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to delete review');
   return await res.json();
 }

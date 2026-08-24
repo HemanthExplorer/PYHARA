@@ -22,7 +22,7 @@ def generate_order_number(db: Session) -> str:
     return candidate
 
 
-def create_order(db: Session, order_in: OrderCreate) -> Order:
+def create_order(db: Session, order_in: OrderCreate, user_id: Optional[str] = None) -> Order:
     try:
         order_num = generate_order_number(db)
         order_id = str(uuid.uuid4())
@@ -52,6 +52,7 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
 
         order = Order(
             id=order_id,
+            user_id=user_id,
             order_number=order_num,
             customer_name=order_in.customer_name.strip(),
             customer_email=order_in.customer_email.strip().lower(),
@@ -68,6 +69,7 @@ def create_order(db: Session, order_in: OrderCreate) -> Order:
             total_amount=None,
         )
         db.add(order)
+
 
         total_sum = Decimal("0.00")
         has_null_price = False
@@ -304,3 +306,13 @@ def cancel_order_by_customer(db: Session, order_id: str) -> Order:
     db.commit()
     db.refresh(order)
     return order
+
+
+def get_user_orders(db: Session, user_id: str) -> List[Order]:
+    return (
+        db.query(Order)
+        .filter(Order.user_id == user_id)
+        .order_by(Order.created_at.desc())
+        .all()
+    )
+

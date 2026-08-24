@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { createOrder } from '../services/orderService';
 import { loadRazorpayScript, createPaymentOrder, verifyPayment } from '../services/paymentService';
 import { formatCurrency, formatTotalCurrency } from '../utils/formatCurrency';
+import * as addressService from '../services/addressService';
 
 import { checkServiceability, getCurrentLocationPIN } from '../services/locationService';
 import LocationSelectorModal from '../components/LocationSelectorModal';
@@ -11,6 +13,10 @@ import LocationSelectorModal from '../components/LocationSelectorModal';
 export default function Checkout() {
   const navigate = useNavigate();
   const { cartItems, clearCart, showToast } = useCart();
+  const { user, isAuthenticated } = useAuth();
+
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddrId, setSelectedAddrId] = useState('');
 
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -21,6 +27,41 @@ export default function Checkout() {
     city: '',
     state: '',
   });
+
+  // Auto-fill user profile info if logged in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setFormData((prev) => ({
+        ...prev,
+        customer_name: prev.customer_name || user.full_name || user.username || '',
+        customer_email: prev.customer_email || user.email || '',
+        customer_phone: prev.customer_phone || user.phone || '',
+      }));
+
+      addressService.getUserAddresses().then((addrs) => {
+        setSavedAddresses(addrs);
+        const def = addrs.find((a) => a.is_default) || addrs[0];
+        if (def) {
+          applySavedAddress(def);
+        }
+      }).catch(() => {});
+    }
+  }, [isAuthenticated, user]);
+
+  const applySavedAddress = (addr) => {
+    setSelectedAddrId(addr.id);
+    setFormData((prev) => ({
+      ...prev,
+      customer_name: addr.full_name,
+      customer_phone: addr.phone,
+      shipping_address: addr.address_line,
+      pincode: addr.pincode,
+      city: addr.city,
+      state: addr.state,
+    }));
+    triggerPincodeLookup(addr.pincode);
+  };
+
 
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('RAZORPAY'); // RAZORPAY or COD
@@ -456,9 +497,34 @@ export default function Checkout() {
                   border: '1px solid var(--border-subtle)',
                 }}
               >
-                <h3 className="font-serif" style={{ fontSize: '1.65rem', marginBottom: '1.5rem' }}>
-                  Customer Information
-                </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                  <h3 className="font-serif" style={{ fontSize: '1.65rem', margin: 0 }}>
+                    Customer Information
+                  </h3>
+
+                  {isAuthenticated && savedAddresses.length > 0 && (
+                    <div style={{ width: '100%', backgroundColor: 'var(--bg-warm)', padding: '0.85rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)' }}>
+                      <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-heading)', display: 'block', marginBottom: '0.35rem' }}>
+                        🏠 Quick Fill from Saved Addresses:
+                      </label>
+                      <select
+                        value={selectedAddrId}
+                        onChange={(e) => {
+                          const selected = savedAddresses.find((a) => a.id === e.target.value);
+                          if (selected) applySavedAddress(selected);
+                        }}
+                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-medium)', background: 'var(--bg-surface)' }}
+                      >
+                        {savedAddresses.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.label}: {a.full_name} ({a.address_line}, {a.city} - {a.pincode}) {a.is_default ? '[Default]' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
 
                 <div className="checkout-form-grid">
                   <div className="form-group full-width">

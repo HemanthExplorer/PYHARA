@@ -27,8 +27,8 @@ export async function createOrder(orderPayload) {
   const res = await fetch(url, {
     method: 'POST',
     headers: {
+      ...getAuthHeaders(),
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
     },
     body: JSON.stringify(orderPayload),
   });
@@ -53,6 +53,18 @@ export async function createOrder(orderPayload) {
 
   return await res.json();
 }
+
+export async function getCustomerMyOrders() {
+  const url = `${API_BASE_URL}/api/orders/my-orders`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch order history');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
 
 export async function getOrderById(orderIdentifier) {
   if (!orderIdentifier) return null;

@@ -7,6 +7,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => authService.getStoredToken());
   const [loading, setLoading] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalInitialTab, setAuthModalInitialTab] = useState('login'); // 'login' or 'register'
 
   const initAuth = useCallback(async () => {
     setLoading(true);
@@ -20,7 +22,7 @@ export function AuthProvider({ children }) {
 
     try {
       const currentUser = await authService.getCurrentUser(storedToken);
-      if (currentUser && currentUser.is_active && currentUser.is_admin) {
+      if (currentUser && currentUser.is_active) {
         setUser(currentUser);
         setToken(storedToken);
       } else {
@@ -42,30 +44,51 @@ export function AuthProvider({ children }) {
     initAuth();
   }, [initAuth]);
 
-  const handleLogin = async (username, password) => {
-    const data = await authService.login(username, password);
+  const handleLogin = async (usernameOrEmail, password) => {
+    const data = await authService.login(usernameOrEmail, password);
     if (!data || !data.access_token) {
-      throw new Error('Invalid username or password');
+      throw new Error('Invalid credentials');
     }
     setToken(data.access_token);
 
-    // Fetch user profile immediately using fresh token to prevent race condition
     const currentUser = await authService.getCurrentUser(data.access_token);
-    if (!currentUser || !currentUser.is_active || !currentUser.is_admin) {
+    if (!currentUser || !currentUser.is_active) {
       authService.removeStoredToken();
       setToken(null);
       setUser(null);
-      throw new Error('Invalid username or password');
+      throw new Error('Account inactive or invalid credentials');
     }
 
     setUser(currentUser);
+    setIsAuthModalOpen(false);
     return currentUser;
+  };
+
+  const handleRegister = async (fullName, email, phone, password) => {
+    await authService.register(fullName, email, phone, password);
+    // Auto-login upon registration
+    return await handleLogin(email, password);
+  };
+
+  const handleUpdateProfile = async (updateData) => {
+    const updated = await authService.updateProfile(updateData);
+    setUser(updated);
+    return updated;
   };
 
   const handleLogout = () => {
     authService.logout();
     setToken(null);
     setUser(null);
+  };
+
+  const openAuthModal = (tab = 'login') => {
+    setAuthModalInitialTab(tab);
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
   };
 
   const isAuthenticated = Boolean(user && token);
@@ -78,9 +101,15 @@ export function AuthProvider({ children }) {
         token,
         isAuthenticated,
         isAdmin,
-        login: handleLogin,
-        logout: handleLogout,
         loading,
+        isAuthModalOpen,
+        authModalInitialTab,
+        openAuthModal,
+        closeAuthModal,
+        login: handleLogin,
+        register: handleRegister,
+        updateProfile: handleUpdateProfile,
+        logout: handleLogout,
       }}
     >
       {children}

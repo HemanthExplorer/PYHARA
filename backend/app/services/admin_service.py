@@ -1,17 +1,18 @@
 from decimal import Decimal
-from typing import Dict, Any
+from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 from app.models.order import Order
 from app.models.product import Product
+from app.models.user import User
+from app.models.review import Review
 
 
 def get_dashboard_stats(db: Session) -> Dict[str, Any]:
-    # 1. Total order metrics
     total_orders = db.query(Order).count()
     pending_orders = db.query(Order).filter(Order.status == "Pending").count()
     paid_orders = db.query(Order).filter(Order.payment_status == "Paid").count()
+    total_customers = db.query(User).filter(User.is_admin == False).count()
 
-    # 2. Total revenue (sum of Paid orders where total_amount is not None)
     paid_orders_list = (
         db.query(Order)
         .filter(Order.payment_status == "Paid", Order.total_amount.isnot(None))
@@ -22,7 +23,6 @@ def get_dashboard_stats(db: Session) -> Dict[str, Any]:
         Decimal("0.00"),
     )
 
-    # 3. Low stock (stock_quantity > 0 and stock_quantity <= 3, exclude Coming Soon)
     low_stock_count = (
         db.query(Product)
         .filter(
@@ -33,7 +33,6 @@ def get_dashboard_stats(db: Session) -> Dict[str, Any]:
         .count()
     )
 
-    # 4. Out of stock (stock_quantity == 0, exclude Coming Soon)
     out_of_stock_count = (
         db.query(Product)
         .filter(
@@ -43,7 +42,6 @@ def get_dashboard_stats(db: Session) -> Dict[str, Any]:
         .count()
     )
 
-    # 5. Recent orders (top 10 newest orders)
     recent_orders = (
         db.query(Order)
         .order_by(Order.created_at.desc())
@@ -55,8 +53,17 @@ def get_dashboard_stats(db: Session) -> Dict[str, Any]:
         "total_orders": total_orders,
         "pending_orders": pending_orders,
         "paid_orders": paid_orders,
+        "total_customers": total_customers,
         "total_revenue": total_revenue,
         "low_stock_count": low_stock_count,
         "out_of_stock_count": out_of_stock_count,
         "recent_orders": recent_orders,
     }
+
+
+def get_all_customers(db: Session) -> List[User]:
+    return db.query(User).filter(User.is_admin == False).order_by(User.created_at.desc()).all()
+
+
+def get_all_reviews(db: Session) -> List[Review]:
+    return db.query(Review).order_by(Review.created_at.desc()).all()

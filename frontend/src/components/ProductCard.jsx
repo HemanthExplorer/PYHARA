@@ -24,7 +24,7 @@ export default function ProductCard({ product }) {
           alt={product.altText || product.name}
           loading="lazy"
         />
-        <span className="demo-tag">Demo Placeholder</span>
+        {product.badge && <span className="product-badge">{product.badge}</span>}
       </div>
 
       <div className="product-info">

@@ -37,29 +37,31 @@ export default function Footer() {
             <h4 className="footer-heading">Navigation</h4>
             <ul className="footer-links">
               <li><Link to="/shop">Shop Collection</Link></li>
+              <li><Link to="/about">About PYHARA</Link></li>
               <li><a href="#story" onClick={(e) => handleSectionLink('story', e)}>Our Philosophy</a></li>
               <li><a href="#artisans" onClick={(e) => handleSectionLink('artisans', e)}>Artisans &amp; Makers</a></li>
-              <li><a href="#sustainability" onClick={(e) => handleSectionLink('sustainability', e)}>Impact Commitments</a></li>
+              <li><Link to="/contact">Contact Support</Link></li>
             </ul>
           </div>
 
-          {/* Column 3: Collections */}
+          {/* Column 3: Customer Care */}
           <div>
-            <h4 className="footer-heading">Collections</h4>
+            <h4 className="footer-heading">Customer Care</h4>
             <ul className="footer-links">
-              <li><Link to="/shop">Ganesh Idols</Link></li>
-              <li><span style={{ opacity: 0.6, cursor: 'default' }}>Traditional Clothing (Soon)</span></li>
-              <li><span style={{ opacity: 0.6, cursor: 'default' }}>Plants &amp; Green Living (Soon)</span></li>
-              <li><span style={{ opacity: 0.6, cursor: 'default' }}>Home &amp; Craft (Soon)</span></li>
+              <li><Link to="/account">My Account</Link></li>
+              <li><Link to="/order-tracking">Order Tracking</Link></li>
+              <li><Link to="/shipping">Shipping Policy</Link></li>
+              <li><Link to="/refunds">Returns &amp; Refunds</Link></li>
             </ul>
           </div>
 
-          {/* Column 4: Platform */}
+          {/* Column 4: Legal */}
           <div>
-            <h4 className="footer-heading">Platform</h4>
+            <h4 className="footer-heading">Legal &amp; Trust</h4>
             <ul className="footer-links">
-              <li><Link to="/shop">Explore Crafts</Link></li>
-              <li><a href="#story" onClick={(e) => handleSectionLink('story', e)}>About PYHARA</a></li>
+              <li><Link to="/terms">Terms &amp; Conditions</Link></li>
+              <li><Link to="/privacy">Privacy Policy</Link></li>
+              <li><Link to="/contact">Help &amp; Contact</Link></li>
             </ul>
           </div>
         </div>

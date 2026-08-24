@@ -20,6 +20,7 @@ class DashboardResponse(BaseModel):
     total_orders: int
     pending_orders: int
     paid_orders: int
+    total_customers: Optional[int] = 0
     total_revenue: Optional[Decimal] = Decimal("0.00")
     low_stock_count: int
     out_of_stock_count: int

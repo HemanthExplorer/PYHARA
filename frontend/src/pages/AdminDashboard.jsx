@@ -129,6 +129,23 @@ export default function AdminDashboard() {
             marginBottom: '3rem',
           }}
         >
+          {/* Total Customers Card */}
+          <div
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              padding: '1.5rem',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-subtle)',
+              boxShadow: 'var(--shadow-card)',
+            }}
+          >
+            <span className="spec-label">Registered Customers</span>
+            <div style={{ fontSize: '2rem', fontWeight: '700', fontFamily: 'var(--font-serif)', color: 'var(--color-earth-green)', margin: '0.5rem 0' }}>
+              {stats.total_customers || 0}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Registered customer accounts</div>
+          </div>
+
           {/* Total Orders Card */}
           <div
             style={{
@@ -145,6 +162,7 @@ export default function AdminDashboard() {
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>All time placed orders</div>
           </div>
+
 
           {/* Pending Orders Card */}
           <div

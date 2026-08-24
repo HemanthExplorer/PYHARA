@@ -67,3 +67,74 @@ def delete_product(db: Session, product_id: str) -> bool:
     db.delete(db_product)
     db.commit()
     return True
+
+
+DEFAULT_INITIAL_PRODUCTS = [
+    {
+        "id": "classic-ganesh",
+        "name": "The Classic Ganesh",
+        "category": "Ganesh Idols",
+        "material": "Natural clay formulation",
+        "description": "A traditional Ganesh idol design created with unbaked natural clay and simple traditional finishing.",
+        "price": None,
+        "availability": "Coming Soon",
+        "stock_quantity": 0,
+        "image": "/images/products/classic-ganesh.jpg",
+        "alt_text": "Demonstration preview of The Classic Ganesh idol",
+        "badge": "First Collection",
+    },
+    {
+        "id": "earth-ganesh",
+        "name": "The Earth Ganesh",
+        "category": "Ganesh Idols",
+        "material": "Earthen clay finish",
+        "description": "An unadorned earthen clay idol showcasing the natural texture and shade of raw clay earth.",
+        "price": None,
+        "availability": "Coming Soon",
+        "stock_quantity": 0,
+        "image": "/images/products/earth-ganesh.jpg",
+        "alt_text": "Demonstration preview of The Earth Ganesh idol",
+        "badge": "First Collection",
+    },
+    {
+        "id": "artisan-ganesh",
+        "name": "The Artisan Ganesh",
+        "category": "Ganesh Idols",
+        "material": "Hand-molded clay",
+        "description": "A finely detailed idol crafted using traditional hand-molding techniques passed down by heritage clay makers.",
+        "price": None,
+        "availability": "Coming Soon",
+        "stock_quantity": 0,
+        "image": "/images/products/artisan-ganesh.jpg",
+        "alt_text": "Demonstration preview of The Artisan Ganesh idol",
+        "badge": "First Collection",
+    },
+    {
+        "id": "minimal-ganesh",
+        "name": "The Minimal Ganesh",
+        "category": "Ganesh Idols",
+        "material": "Contemporary sculpted clay",
+        "description": "A clean, contemporary interpretation featuring simplified geometric lines in natural sculpted clay.",
+        "price": None,
+        "availability": "Coming Soon",
+        "stock_quantity": 0,
+        "image": "/images/products/minimal-ganesh.jpg",
+        "alt_text": "Demonstration preview of The Minimal Ganesh idol",
+        "badge": "First Collection",
+    },
+]
+
+
+def seed_default_products(db: Session) -> None:
+    """
+    Safely seeds initial default catalog products IF AND ONLY IF the products table is completely empty.
+    If any products exist (such as admin added or edited products), seeding is skipped.
+    """
+    if db.query(Product).count() > 0:
+        return
+
+    for item in DEFAULT_INITIAL_PRODUCTS:
+        db_product = Product(**item)
+        db.add(db_product)
+    db.commit()
+
