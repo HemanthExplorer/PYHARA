@@ -98,23 +98,37 @@ def init_default_admin(db: Session) -> Optional[User]:
         print("Notice: Initial admin credentials not set in environment. Skipping admin bootstrap.")
         return None
 
-    existing_user = get_user_by_username(db, username=admin_username)
+    # Check by email first because email has a unique database constraint.
+    existing_user = get_user_by_email(db, email=admin_email)
+
+    # If no user exists with that email, check by username.
+    if not existing_user:
+        existing_user = get_user_by_username(db, username=admin_username)
+
     if existing_user:
+        # Make sure the existing account is the configured admin account.
+        existing_user.is_admin = True
+        existing_user.is_active = True
+
+        # Keep the configured username if it is available.
+        if existing_user.username != admin_username:
+            username_owner = get_user_by_username(db, username=admin_username)
+
+            if not username_owner or username_owner.id == existing_user.id:
+                existing_user.username = admin_username
+
+        # Synchronize the password with ADMIN_PASSWORD.
         if not verify_password(admin_password, existing_user.hashed_password):
             existing_user.hashed_password = get_password_hash(admin_password)
-            existing_user.is_admin = True
-            existing_user.is_active = True
-            db.commit()
-            db.refresh(existing_user)
-            print(f"Synchronized admin password for account '{admin_username}'.")
-        else:
-            if not existing_user.is_admin or not existing_user.is_active:
-                existing_user.is_admin = True
-                existing_user.is_active = True
-                db.commit()
-                db.refresh(existing_user)
+            print(f"Synchronized admin password for account '{existing_user.username}'.")
+
+        db.commit()
+        db.refresh(existing_user)
+
+        print(f"Using existing admin account: '{existing_user.username}'")
         return existing_user
 
+    # No existing account by email or username, so create one.
     admin_user = User(
         id=str(uuid.uuid4()),
         username=admin_username,
@@ -125,8 +139,10 @@ def init_default_admin(db: Session) -> Optional[User]:
         is_active=True,
         is_admin=True,
     )
+
     db.add(admin_user)
     db.commit()
     db.refresh(admin_user)
+
     print(f"Initialized admin account: '{admin_username}'")
     return admin_user
