@@ -5,12 +5,21 @@
  */
 
 const getApiBaseUrl = () => {
-  // Use the Vercel environment variable
+  // Use Vite environment variable if available
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
   }
 
-  // Local development fallback
+  // Production: use the deployed Vercel backend
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  ) {
+    return 'https://pyhara-backend.vercel.app';
+  }
+
+  // Local development
   return 'http://127.0.0.1:8000';
 };
 
