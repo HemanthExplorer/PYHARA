@@ -45,7 +45,7 @@ export default function Checkout() {
         if (def) {
           applySavedAddress(def);
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [isAuthenticated, user]);
 
@@ -417,8 +417,8 @@ export default function Checkout() {
   const payButtonText = submitting
     ? (statusMessage || 'Processing...')
     : hasNullPrice
-    ? 'Place Order (Total Pending)'
-    : `Pay ${formatTotalCurrency(subtotalAmount)}`;
+      ? 'Place Order (Total Pending)'
+      : `Pay ${formatTotalCurrency(subtotalAmount)}`;
 
   return (
     <div className="checkout-page section" style={{ paddingTop: '2.5rem' }}>
@@ -844,8 +844,8 @@ export default function Checkout() {
                   {submitting
                     ? (statusMessage || 'Processing Order...')
                     : paymentMethod === 'COD'
-                    ? `Place Order with Cash on Delivery (${formatTotalCurrency(subtotalAmount + (pinStatus && pinStatus.serviceable ? Number(pinStatus.delivery_charge || 0) : 0))})`
-                    : `Complete Payment (${formatTotalCurrency(subtotalAmount + (pinStatus && pinStatus.serviceable ? Number(pinStatus.delivery_charge || 0) : 0))})`}
+                      ? `Place Order with Cash on Delivery (${formatTotalCurrency(subtotalAmount + (pinStatus && pinStatus.serviceable ? Number(pinStatus.delivery_charge || 0) : 0))})`
+                      : `Complete Payment (${formatTotalCurrency(subtotalAmount + (pinStatus && pinStatus.serviceable ? Number(pinStatus.delivery_charge || 0) : 0))})`}
                 </button>
               </div>
             </form>

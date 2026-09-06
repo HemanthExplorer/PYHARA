@@ -6,7 +6,8 @@ services:
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://pyhara-backend.onrender.com
+        value: https://pyhara.onrender.com
+
     routes:
       - type: rewrite
         source: /*

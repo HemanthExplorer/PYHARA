@@ -14,8 +14,9 @@ const getApiBaseUrl = () => {
 
   // 2. Production fallback on Render / deployed hostnames
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return 'https://pyhara-backend.onrender.com';
+    return 'https://pyhara.onrender.com';
   }
+
 
 
   // 3. Local development fallback
